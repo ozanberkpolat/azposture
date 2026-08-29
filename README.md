@@ -7,8 +7,10 @@ output is `findings.json` on your disk, and it is yours to keep.
 
 ```powershell
 Install-Module AzPosture -Scope CurrentUser -AllowPrerelease
-Invoke-AzPosture -TenantId contoso.onmicrosoft.com
+Invoke-AzPosture
 ```
+
+That signs you in and runs against the tenant you land in. Pass `-TenantId` to pick one.
 
 About fifteen minutes later:
 
@@ -70,7 +72,8 @@ Install-Module Az.Accounts, Az.ResourceGraph -Scope CurrentUser
 ## Running
 
 ```powershell
-Invoke-AzPosture -TenantId <tenant id or domain>            # both planes
+Invoke-AzPosture                                            # both planes, your home tenant
+Invoke-AzPosture -TenantId <tenant id or domain>            # a specific tenant
 Invoke-AzPosture -TenantId <tenant> -Plane Identity         # Graph only, no Az modules needed
 Invoke-AzPosture -TenantId <tenant> -UseDeviceCode          # headless or remote shells
 Invoke-AzPosture -TenantId <tenant> -Check id-long-lived-creds, arm-kv-rbac

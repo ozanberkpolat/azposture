@@ -17,7 +17,7 @@
     PrivateData       = @{
         PSData = @{
             Tags = @('Azure', 'EntraID', 'Assessment', 'Posture', 'Security', 'Cost', 'Governance', 'Reliability', 'ResourceGraph', 'Graph', 'PSEdition_Core')
-            Prerelease = 'preview2'
+            Prerelease = 'preview3'
             ExternalModuleDependencies = @('Az.Accounts', 'Az.ResourceGraph')
             ReleaseNotes = 'First public preview. Identity checks need only Microsoft.Graph.Authentication. Estate checks need Az.Accounts and Az.ResourceGraph and the Reader role; without them they are reported as not assessed, never silently skipped.'
         }

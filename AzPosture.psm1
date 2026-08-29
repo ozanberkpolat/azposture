@@ -93,13 +93,14 @@ function Invoke-AzPosture {
       findings.json plus summary.json into a timestamped folder. Nothing is uploaded.
       A check that cannot run is reported as skipped with the reason, never as a pass.
     .EXAMPLE
-      Invoke-AzPosture -TenantId contoso.onmicrosoft.com
+      Invoke-AzPosture
+      Signs you in and runs against the tenant you land in.
     .EXAMPLE
       Invoke-AzPosture -TenantId contoso.onmicrosoft.com -Plane Identity -UseDeviceCode
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)] [string] $TenantId,
+        [string] $TenantId,
         [string] $OutputFolder = (Join-Path (Get-Location) 'azposture'),
         [ValidateSet('Both', 'Identity', 'Estate')] [string] $Plane = 'Both',
         [string[]] $Check,
@@ -134,6 +135,14 @@ function Invoke-AzPosture {
     Write-Host ''
 
     $findings = [System.Collections.ArrayList]::new()
+
+    # No -TenantId: take it from a session that already exists, otherwise from the
+    # account's home tenant after the first sign-in. Nothing has to be looked up first.
+    if (-not $TenantId) {
+        $mg = if (Get-Module -ListAvailable Microsoft.Graph.Authentication) { Import-Module Microsoft.Graph.Authentication -ErrorAction SilentlyContinue; Get-MgContext } else { $null }
+        if ($mg -and $mg.TenantId) { $TenantId = $mg.TenantId }
+        elseif ((Get-Module -ListAvailable Az.Accounts) -and (Import-Module Az.Accounts -PassThru -ErrorAction SilentlyContinue) -and (Get-AzContext)) { $TenantId = (Get-AzContext).Tenant.Id }
+    }
     $isGuid = $TenantId -match '^[0-9a-fA-F-]{36}$'
 
     # ── identity plane sign-in ─────────────────────────────────────────────────
@@ -147,9 +156,11 @@ function Invoke-AzPosture {
             Write-Marker 'CONNECTED' ('Microsoft Graph as {0} (existing session)' -f $ctx.Account) 'Green'
         } else {
             Write-Marker 'SIGNIN' 'Microsoft Graph · sign in as yourself; every scope requested is read-only'
-            if ($UseDeviceCode) { Connect-MgGraph -TenantId $TenantId -Scopes $scopes -UseDeviceCode -NoWelcome }
-            else { Connect-MgGraph -TenantId $TenantId -Scopes $scopes -NoWelcome }
-            Write-Marker 'CONNECTED' ('Microsoft Graph as {0}' -f (Get-MgContext).Account) 'Green'
+            $tenantArg = if ($TenantId) { @{ TenantId = $TenantId } } else { @{} }
+            if ($UseDeviceCode) { Connect-MgGraph @tenantArg -Scopes $scopes -UseDeviceCode -NoWelcome }
+            else { Connect-MgGraph @tenantArg -Scopes $scopes -NoWelcome }
+            if (-not $TenantId) { $TenantId = (Get-MgContext).TenantId; $isGuid = $true }
+            Write-Marker 'CONNECTED' ('Microsoft Graph as {0} · tenant {1}' -f (Get-MgContext).Account, $TenantId) 'Green'
         }
         Write-Marker 'SCOPES' ($scopes -join ', ') 'DarkGray'
         . (Join-Path $script:Root 'lib' '_lib.ps1')
@@ -169,9 +180,11 @@ function Invoke-AzPosture {
                 Write-Marker 'CONNECTED' ('Azure as {0} (existing session)' -f $actx.Account.Id) 'Green'
             } else {
                 Write-Marker 'SIGNIN' 'Azure · the Reader role on your subscriptions is enough'
-                if ($UseDeviceCode) { Connect-AzAccount -Tenant $TenantId -UseDeviceAuthentication -WarningAction SilentlyContinue | Out-Null }
-                else { Connect-AzAccount -Tenant $TenantId -WarningAction SilentlyContinue | Out-Null }
-                Write-Marker 'CONNECTED' ('Azure as {0}' -f (Get-AzContext).Account.Id) 'Green'
+                $tenantArg = if ($TenantId) { @{ Tenant = $TenantId } } else { @{} }
+                if ($UseDeviceCode) { Connect-AzAccount @tenantArg -UseDeviceAuthentication -WarningAction SilentlyContinue | Out-Null }
+                else { Connect-AzAccount @tenantArg -WarningAction SilentlyContinue | Out-Null }
+                if (-not $TenantId) { $TenantId = (Get-AzContext).Tenant.Id; $isGuid = $true }
+                Write-Marker 'CONNECTED' ('Azure as {0} · tenant {1}' -f (Get-AzContext).Account.Id, $TenantId) 'Green'
             }
             . (Join-Path $script:Root 'lib' '_lib-arm.ps1')
             $subs = @(Get-Subs)
