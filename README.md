@@ -58,6 +58,24 @@ Get-AzPostureCheck -Plane Identity -Severity critical, high
 Get-AzPostureCheck -Framework cost, caf, waf
 ```
 
+## Who can run it
+
+The identity checks need Microsoft Graph scopes that only an administrator can consent
+to (`Directory.Read.All`, `AuditLog.Read.All`, `Policy.Read.All` and similar, all
+read-only). Sign-in goes through Microsoft's own **Microsoft Graph Command Line Tools**
+app, so there is no AzPosture app to register or consent to. In a tenant that restricts
+user consent, a non-administrator sees **Approval required** and the run stops. Any one
+of these gets through:
+
+1. Run it as a **Global Reader** or Global Administrator of the tenant.
+2. Have an administrator approve Microsoft Graph Command Line Tools once for the exact
+   scopes the run needs. The module prints the admin-consent link when sign-in fails.
+   After that, any Global Reader can run it.
+3. Use **Request approval** in the dialog if your tenant offers it, then run again.
+
+The estate checks need the **Reader** role on the subscriptions you want assessed.
+Nothing is installed or registered in the tenant by any of this.
+
 ## Prerequisites
 
 - PowerShell 7.2 or later (Windows, macOS, Linux)

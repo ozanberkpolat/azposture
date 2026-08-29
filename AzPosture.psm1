@@ -157,8 +157,29 @@ function Invoke-AzPosture {
         } else {
             Write-Marker 'SIGNIN' 'Microsoft Graph · sign in as yourself; every scope requested is read-only'
             $tenantArg = if ($TenantId) { @{ TenantId = $TenantId } } else { @{} }
-            if ($UseDeviceCode) { Connect-MgGraph @tenantArg -Scopes $scopes -UseDeviceCode -NoWelcome }
-            else { Connect-MgGraph @tenantArg -Scopes $scopes -NoWelcome }
+            try {
+                if ($UseDeviceCode) { Connect-MgGraph @tenantArg -Scopes $scopes -UseDeviceCode -NoWelcome }
+                else { Connect-MgGraph @tenantArg -Scopes $scopes -NoWelcome }
+            } catch {
+                # The identity checks need admin-consent-only scopes. In a tenant that restricts
+                # user consent, a non-admin sees "Approval required" and lands here. Say what
+                # gets through instead of leaving a raw AADSTS error on the screen.
+                $t = if ($TenantId) { $TenantId } else { 'common' }
+                $consent = 'https://login.microsoftonline.com/{0}/v2.0/adminconsent?client_id=14d82eec-204b-4c2f-b7e8-296a70dab67e&scope={1}' -f $t, [uri]::EscapeDataString(($scopes | ForEach-Object { "https://graph.microsoft.com/$_" }) -join ' ')
+                Write-Marker 'BLOCKED' 'Microsoft Graph sign-in did not complete.' 'Red'
+                Write-Host ''
+                Write-Host 'If the dialog said "Approval required": the identity checks need scopes only an' -ForegroundColor Yellow
+                Write-Host 'administrator can consent to. Any one of these gets through:' -ForegroundColor Yellow
+                Write-Host '  1. Run it as a Global Reader or Global Administrator of the tenant.' -ForegroundColor Yellow
+                Write-Host '  2. Have an administrator approve Microsoft Graph Command Line Tools once, for the' -ForegroundColor Yellow
+                Write-Host '     exact read-only scopes this run needs. After that any Global Reader can run it:' -ForegroundColor Yellow
+                Write-Host ('     ' + $consent) -ForegroundColor Cyan
+                Write-Host '  3. Use "Request approval" in the dialog if your tenant offers it, then run again.' -ForegroundColor Yellow
+                Write-Host ''
+                Write-Host 'Nothing is installed or registered in the tenant by any of these; the app being' -ForegroundColor DarkGray
+                Write-Host 'approved is Microsoft''s own command-line tools app, and every scope is read-only.' -ForegroundColor DarkGray
+                throw
+            }
             if (-not $TenantId) { $TenantId = (Get-MgContext).TenantId; $isGuid = $true }
             Write-Marker 'CONNECTED' ('Microsoft Graph as {0} · tenant {1}' -f (Get-MgContext).Account, $TenantId) 'Green'
         }
