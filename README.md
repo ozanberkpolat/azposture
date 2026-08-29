@@ -32,7 +32,7 @@ score      58 / 100   (85+ strong · 60 to 84 fair · under 60 at risk)
 AZPOSTURE::DONE
 wrote      ./azposture/2026-08-29-1532/findings.json
            ./azposture/2026-08-29-1532/summary.json
-next       open the report, then book the readout if you want a second opinion on it
+next       open the report, then get in touch if you want a second opinion on it
 ```
 
 The numbers above are illustrative. Yours will differ.

@@ -333,7 +333,7 @@ function Invoke-AzPosture {
     Write-Marker 'DONE' '' 'Green'
     Write-Host ('wrote      {0}' -f (Join-Path $out 'findings.json')) -ForegroundColor Green
     Write-Host ('           {0}' -f (Join-Path $out 'summary.json')) -ForegroundColor Green
-    Write-Host 'next       open the report, then book the readout if you want a second opinion on it' -ForegroundColor DarkGray
+    Write-Host 'next       open the report, then get in touch if you want a second opinion on it' -ForegroundColor DarkGray
     Write-Host ''
 
     if ($PassThru) { [pscustomobject]$summary }
