@@ -88,10 +88,16 @@ function Invoke-AzPosture {
     .SYNOPSIS
       Run the AzPosture checklist against a tenant, read-only, and write findings.json.
     .DESCRIPTION
-      Signs in as you (interactive browser, or -UseDeviceCode), runs the identity checks
-      over Microsoft Graph and the estate checks over Azure Resource Graph, and writes
-      findings.json plus summary.json into a timestamped folder. Nothing is uploaded.
-      A check that cannot run is reported as skipped with the reason, never as a pass.
+      Signs in ONCE as you through Microsoft's own Azure PowerShell app (browser, or
+      -UseDeviceCode). That app is pre-authorised in every tenant, so there is no consent
+      dialog, and a Global Reader is enough. The same sign-in serves both planes: its
+      Microsoft Graph token runs the identity checks, its Azure context runs the estate
+      checks. Findings and summary are written to a timestamped folder; nothing is
+      uploaded. A check that cannot run is reported as skipped with the reason.
+
+      -GraphConsent uses Microsoft Graph Command Line Tools with explicit scopes instead,
+      for tenants where Azure PowerShell sign-in is blocked by policy. That route needs
+      an administrator's consent.
     .EXAMPLE
       Invoke-AzPosture
       Signs you in and runs against the tenant you land in.
@@ -105,6 +111,7 @@ function Invoke-AzPosture {
         [ValidateSet('Both', 'Identity', 'Estate')] [string] $Plane = 'Both',
         [string[]] $Check,
         [switch] $UseDeviceCode,
+        [switch] $GraphConsent,
         [switch] $PassThru
     )
 
@@ -145,68 +152,85 @@ function Invoke-AzPosture {
     }
     $isGuid = $TenantId -match '^[0-9a-fA-F-]{36}$'
 
-    # ── identity plane sign-in ─────────────────────────────────────────────────
-    if ($needsGraph) {
-        Import-Module Microsoft.Graph.Authentication -ErrorAction Stop
-        $ctx = Get-MgContext
-        $have = if ($ctx) { @($ctx.Scopes) } else { @() }
-        $missing = @($scopes | Where-Object { $have -notcontains $_ })
-        $sameTenant = $ctx -and ((-not $isGuid) -or ($ctx.TenantId -eq $TenantId))
-        if ($ctx -and $sameTenant -and $missing.Count -eq 0) {
-            Write-Marker 'CONNECTED' ('Microsoft Graph as {0} (existing session)' -f $ctx.Account) 'Green'
-        } else {
-            Write-Marker 'SIGNIN' 'Microsoft Graph · sign in as yourself; every scope requested is read-only'
-            $tenantArg = if ($TenantId) { @{ TenantId = $TenantId } } else { @{} }
-            try {
-                if ($UseDeviceCode) { Connect-MgGraph @tenantArg -Scopes $scopes -UseDeviceCode -NoWelcome }
-                else { Connect-MgGraph @tenantArg -Scopes $scopes -NoWelcome }
-            } catch {
-                # The identity checks need admin-consent-only scopes. In a tenant that restricts
-                # user consent, a non-admin sees "Approval required" and lands here. Say what
-                # gets through instead of leaving a raw AADSTS error on the screen.
-                $t = if ($TenantId) { $TenantId } else { 'common' }
-                $consent = 'https://login.microsoftonline.com/{0}/v2.0/adminconsent?client_id=14d82eec-204b-4c2f-b7e8-296a70dab67e&scope={1}' -f $t, [uri]::EscapeDataString(($scopes | ForEach-Object { "https://graph.microsoft.com/$_" }) -join ' ')
-                Write-Marker 'BLOCKED' 'Microsoft Graph sign-in did not complete.' 'Red'
-                Write-Host ''
-                Write-Host 'If the dialog said "Approval required": the identity checks need scopes only an' -ForegroundColor Yellow
-                Write-Host 'administrator can consent to. Any one of these gets through:' -ForegroundColor Yellow
-                Write-Host '  1. Run it as a Global Reader or Global Administrator of the tenant.' -ForegroundColor Yellow
-                Write-Host '  2. Have an administrator approve Microsoft Graph Command Line Tools once, for the' -ForegroundColor Yellow
-                Write-Host '     exact read-only scopes this run needs. After that any Global Reader can run it:' -ForegroundColor Yellow
-                Write-Host ('     ' + $consent) -ForegroundColor Cyan
-                Write-Host '  3. Use "Request approval" in the dialog if your tenant offers it, then run again.' -ForegroundColor Yellow
-                Write-Host ''
-                Write-Host 'Nothing is installed or registered in the tenant by any of these; the app being' -ForegroundColor DarkGray
-                Write-Host 'approved is Microsoft''s own command-line tools app, and every scope is read-only.' -ForegroundColor DarkGray
-                throw
-            }
-            if (-not $TenantId) { $TenantId = (Get-MgContext).TenantId; $isGuid = $true }
-            Write-Marker 'CONNECTED' ('Microsoft Graph as {0} · tenant {1}' -f (Get-MgContext).Account, $TenantId) 'Green'
-        }
-        Write-Marker 'SCOPES' ($scopes -join ', ') 'DarkGray'
-        . (Join-Path $script:Root 'lib' '_lib.ps1')
-    }
-
-    # ── estate plane sign-in: loud skip when it cannot run ─────────────────────
-    $armReady = $false; $armReason = $null
-    if ($needsArm) {
-        $azOk = (Get-Module -ListAvailable Az.Accounts) -and (Get-Module -ListAvailable Az.ResourceGraph)
+    # ── one sign-in for both planes, through Microsoft's own Azure PowerShell app ────
+    # That first-party app is pre-authorised in every tenant: no consent dialog, and a
+    # Global Reader is enough. Its session yields a Microsoft Graph token carrying what
+    # your sign-in can read; a check needing a scope the token lacks loud-skips. This is
+    # the route the toolkit itself uses. -GraphConsent is the explicit-scopes alternative.
+    $azOk = [bool](Get-Module -ListAvailable Az.Accounts)
+    $azReady = $false
+    if (($needsGraph -and -not $GraphConsent) -or $needsArm) {
         if (-not $azOk) {
-            $armReason = 'Az.Accounts and Az.ResourceGraph are not installed on this machine. Install-Module Az.Accounts, Az.ResourceGraph -Scope CurrentUser, then run again.'
+            if ($needsGraph -and -not $GraphConsent) { throw 'Az.Accounts is required for sign-in. Install-Module Az.Accounts -Scope CurrentUser, then run again (or use -GraphConsent).' }
         } else {
-            Import-Module Az.Accounts, Az.ResourceGraph -ErrorAction Stop
+            Import-Module Az.Accounts -ErrorAction Stop
             $actx = Get-AzContext
             $sameTenant = $actx -and ((-not $isGuid) -or ($actx.Tenant.Id -eq $TenantId))
             if ($actx -and $sameTenant) {
                 Write-Marker 'CONNECTED' ('Azure as {0} (existing session)' -f $actx.Account.Id) 'Green'
             } else {
-                Write-Marker 'SIGNIN' 'Azure · the Reader role on your subscriptions is enough'
+                Write-Marker 'SIGNIN' 'Azure · Microsoft''s own Azure PowerShell app, your identity, read-only use · no consent prompt'
                 $tenantArg = if ($TenantId) { @{ Tenant = $TenantId } } else { @{} }
                 if ($UseDeviceCode) { Connect-AzAccount @tenantArg -UseDeviceAuthentication -WarningAction SilentlyContinue | Out-Null }
                 else { Connect-AzAccount @tenantArg -WarningAction SilentlyContinue | Out-Null }
-                if (-not $TenantId) { $TenantId = (Get-AzContext).Tenant.Id; $isGuid = $true }
-                Write-Marker 'CONNECTED' ('Azure as {0} · tenant {1}' -f (Get-AzContext).Account.Id, $TenantId) 'Green'
+                $actx = Get-AzContext
+                Write-Marker 'CONNECTED' ('Azure as {0}' -f $actx.Account.Id) 'Green'
             }
+            if (-not $TenantId) { $TenantId = $actx.Tenant.Id; $isGuid = $true }
+            Write-Host ('           tenant {0}' -f $TenantId) -ForegroundColor DarkGray
+            $azReady = $true
+        }
+    }
+
+    if ($needsGraph) {
+        Import-Module Microsoft.Graph.Authentication -ErrorAction Stop
+        if ($azReady -and -not $GraphConsent) {
+            $tok = Get-AzAccessToken -ResourceTypeName MSGraph -ErrorAction Stop
+            $secure = if ($tok.Token -is [securestring]) { $tok.Token } else { ConvertTo-SecureString $tok.Token -AsPlainText -Force }
+            Connect-MgGraph -AccessToken $secure -NoWelcome
+            Write-Marker 'CONNECTED' 'Microsoft Graph · through the same sign-in' 'Green'
+        } else {
+            $ctx = Get-MgContext
+            $have = if ($ctx) { @($ctx.Scopes) } else { @() }
+            $missing = @($scopes | Where-Object { $have -notcontains $_ })
+            $sameTenant = $ctx -and ((-not $isGuid) -or ($ctx.TenantId -eq $TenantId))
+            if ($ctx -and $sameTenant -and $missing.Count -eq 0) {
+                Write-Marker 'CONNECTED' ('Microsoft Graph as {0} (existing session)' -f $ctx.Account) 'Green'
+            } else {
+                Write-Marker 'SIGNIN' 'Microsoft Graph · Microsoft Graph Command Line Tools, explicit read-only scopes · needs admin consent'
+                $tenantArg = if ($TenantId) { @{ TenantId = $TenantId } } else { @{} }
+                try {
+                    if ($UseDeviceCode) { Connect-MgGraph @tenantArg -Scopes $scopes -UseDeviceCode -NoWelcome }
+                    else { Connect-MgGraph @tenantArg -Scopes $scopes -NoWelcome }
+                } catch {
+                    $t = if ($TenantId) { $TenantId } else { 'common' }
+                    $consent = 'https://login.microsoftonline.com/{0}/v2.0/adminconsent?client_id=14d82eec-204b-4c2f-b7e8-296a70dab67e&scope={1}' -f $t, [uri]::EscapeDataString(($scopes | ForEach-Object { "https://graph.microsoft.com/$_" }) -join ' ')
+                    Write-Marker 'BLOCKED' 'Microsoft Graph sign-in did not complete.' 'Red'
+                    Write-Host ''
+                    Write-Host 'The default route (no -GraphConsent) signs in through Azure PowerShell and needs no' -ForegroundColor Yellow
+                    Write-Host 'consent at all; try that first. If this route is required, an administrator can' -ForegroundColor Yellow
+                    Write-Host 'approve Microsoft Graph Command Line Tools once for these read-only scopes:' -ForegroundColor Yellow
+                    Write-Host ('  ' + $consent) -ForegroundColor Cyan
+                    throw
+                }
+                if (-not $TenantId) { $TenantId = (Get-MgContext).TenantId; $isGuid = $true }
+                Write-Marker 'CONNECTED' ('Microsoft Graph as {0}' -f (Get-MgContext).Account) 'Green'
+            }
+        }
+        $got = @((Get-MgContext).Scopes)
+        Write-Marker 'SCOPES' ($(if ($got.Count) { $got -join ', ' } else { 'as granted to your sign-in' })) 'DarkGray'
+        . (Join-Path $script:Root 'lib' '_lib.ps1')
+    }
+
+    # ── estate plane: needs Az.ResourceGraph and a readable subscription, else loud skip ──
+    $armReady = $false; $armReason = $null
+    if ($needsArm) {
+        if (-not $azReady) {
+            $armReason = 'Az.Accounts is not installed on this machine. Install-Module Az.Accounts, Az.ResourceGraph -Scope CurrentUser, then run again.'
+        } elseif (-not (Get-Module -ListAvailable Az.ResourceGraph)) {
+            $armReason = 'Az.ResourceGraph is not installed on this machine. Install-Module Az.ResourceGraph -Scope CurrentUser, then run again.'
+        } else {
+            Import-Module Az.ResourceGraph -ErrorAction Stop
             . (Join-Path $script:Root 'lib' '_lib-arm.ps1')
             $subs = @(Get-Subs)
             if ($subs.Count -eq 0) {

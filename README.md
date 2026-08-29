@@ -18,11 +18,11 @@ About fifteen minutes later:
 AzPosture 0.1.0 · checklist 2026-08-18 · 130 checks selected
 read-only · nothing is installed in the tenant · nothing is uploaded
 
-AZPOSTURE::SIGNIN Microsoft Graph · sign in as yourself; every scope requested is read-only
-AZPOSTURE::CONNECTED Microsoft Graph as you@contoso.com
-AZPOSTURE::SCOPES Application.Read.All, AuditLog.Read.All, Directory.Read.All, Policy.Read.All, ...
-AZPOSTURE::SIGNIN Azure · the Reader role on your subscriptions is enough
+AZPOSTURE::SIGNIN Azure · Microsoft's own Azure PowerShell app, your identity, read-only use · no consent prompt
 AZPOSTURE::CONNECTED Azure as you@contoso.com
+           tenant 00000000-0000-0000-0000-000000000000
+AZPOSTURE::CONNECTED Microsoft Graph · through the same sign-in
+AZPOSTURE::SCOPES as granted to your sign-in
            3 subscription(s) readable
 identity   43 checks
 estate     87 checks
@@ -60,31 +60,29 @@ Get-AzPostureCheck -Framework cost, caf, waf
 
 ## Who can run it
 
-The identity checks need Microsoft Graph scopes that only an administrator can consent
-to (`Directory.Read.All`, `AuditLog.Read.All`, `Policy.Read.All` and similar, all
-read-only). Sign-in goes through Microsoft's own **Microsoft Graph Command Line Tools**
-app, so there is no AzPosture app to register or consent to. In a tenant that restricts
-user consent, a non-administrator sees **Approval required** and the run stops. Any one
-of these gets through:
+A **Global Reader** for the identity checks and **Reader** on the subscriptions for the
+estate checks. No administrator consent, no app registration.
 
-1. Run it as a **Global Reader** or Global Administrator of the tenant.
-2. Have an administrator approve Microsoft Graph Command Line Tools once for the exact
-   scopes the run needs. The module prints the admin-consent link when sign-in fails.
-   After that, any Global Reader can run it.
-3. Use **Request approval** in the dialog if your tenant offers it, then run again.
+Sign-in goes through Microsoft's own **Azure PowerShell** app, which every tenant already
+authorises, so there is no approval dialog. The same sign-in yields a Microsoft Graph
+token carrying what your account can read; a check that needs more than your account has
+is reported as not assessed with the reason.
 
-The estate checks need the **Reader** role on the subscriptions you want assessed.
+Some tenants block Azure PowerShell sign-in by policy. `-GraphConsent` switches to
+Microsoft Graph Command Line Tools with explicit read-only scopes, which does need an
+administrator's consent; the module prints the consent link if that route is refused.
+
 Nothing is installed or registered in the tenant by any of this.
 
 ## Prerequisites
 
 - PowerShell 7.2 or later (Windows, macOS, Linux)
-- `Microsoft.Graph.Authentication` (installed automatically as a dependency)
-- For the estate plane: `Az.Accounts` and `Az.ResourceGraph`. Without them the 87 estate
-  checks are reported as not assessed and the identity plane still runs in full.
+- `Az.Accounts` and `Microsoft.Graph.Authentication` (installed automatically as dependencies)
+- For the estate plane: `Az.ResourceGraph`. Without it the 87 estate checks are reported
+  as not assessed and the identity plane still runs in full.
 
 ```powershell
-Install-Module Az.Accounts, Az.ResourceGraph -Scope CurrentUser
+Install-Module Az.ResourceGraph -Scope CurrentUser
 ```
 
 ## Running
@@ -92,7 +90,8 @@ Install-Module Az.Accounts, Az.ResourceGraph -Scope CurrentUser
 ```powershell
 Invoke-AzPosture                                            # both planes, your home tenant
 Invoke-AzPosture -TenantId <tenant id or domain>            # a specific tenant
-Invoke-AzPosture -TenantId <tenant> -Plane Identity         # Graph only, no Az modules needed
+Invoke-AzPosture -TenantId <tenant> -Plane Identity         # identity checks only
+Invoke-AzPosture -GraphConsent                               # explicit Graph scopes; needs admin consent
 Invoke-AzPosture -TenantId <tenant> -UseDeviceCode          # headless or remote shells
 Invoke-AzPosture -TenantId <tenant> -Check id-long-lived-creds, arm-kv-rbac
 Invoke-AzPosture -TenantId <tenant> -OutputFolder ~/reports -PassThru
