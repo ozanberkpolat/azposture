@@ -1,4 +1,4 @@
-# Generalized from OBP/Azure/Audit/Authentication/Guests-With-Password-Only.ps1
+# Generalized from an earlier internal audit script.
 $guests = Get-GraphAll "https://graph.microsoft.com/v1.0/users?`$filter=userType eq 'Guest'&`$select=id,displayName,userPrincipalName&`$top=999"
 $items = @()
 foreach ($g in $guests) {

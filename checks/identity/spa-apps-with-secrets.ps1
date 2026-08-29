@@ -1,4 +1,4 @@
-# Generalized from OBP/Azure/Audit/App_Registrations/SinglePageApp-With-Secrets.ps1
+# Generalized from an earlier internal audit script.
 $apps = Get-AppsCached
 $now = Get-Date
 $items = @()

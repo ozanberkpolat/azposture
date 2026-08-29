@@ -1,4 +1,4 @@
-# Generalized from OBP/Azure/Audit/App_Registrations/DevOps-Apps-With-Active-Secret.ps1
+# Generalized from an earlier internal audit script.
 $apps = Get-AppsCached
 $now = Get-Date
 $items = @()

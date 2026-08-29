@@ -1,4 +1,4 @@
-# Generalized from OBP/Azure/Audit/Authentication/Z-Accounts-SignIn-and-AuthMethods.ps1
+# Generalized from an earlier internal audit script.
 # Original needed a hardcoded group id + the "-z" UPN convention. Generalized to
 # enumerate members of privileged DIRECTORY ROLES (works on any tenant), and flag
 # admins with weak MFA or stale sign-in. Tenant comes from the signed-in session.

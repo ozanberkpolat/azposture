@@ -1,4 +1,4 @@
-# Generalized from OBP/Azure/Audit/App_Registrations/LongLivedCreds.ps1
+# Generalized from an earlier internal audit script.
 # Assumes an open Graph session (run-checks.ps1 connects once). Emits the contract.
 $apps = Get-AppsCached
 $now = Get-Date

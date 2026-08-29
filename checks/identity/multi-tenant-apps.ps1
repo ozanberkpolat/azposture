@@ -1,4 +1,4 @@
-# Generalized from OBP/Azure/Audit/App_Registrations/Apps-With-Multi-Tenant-Audience.ps1
+# Generalized from an earlier internal audit script.
 $apps = Get-AppsCached
 $items = @()
 foreach ($app in $apps) {

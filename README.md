@@ -73,7 +73,7 @@ Install-Module Az.Accounts, Az.ResourceGraph -Scope CurrentUser
 Invoke-AzPosture -TenantId <tenant id or domain>            # both planes
 Invoke-AzPosture -TenantId <tenant> -Plane Identity         # Graph only, no Az modules needed
 Invoke-AzPosture -TenantId <tenant> -UseDeviceCode          # headless or remote shells
-Invoke-AzPosture -TenantId <tenant> -Check obp-long-lived-creds, arm-kv-rbac
+Invoke-AzPosture -TenantId <tenant> -Check id-long-lived-creds, arm-kv-rbac
 Invoke-AzPosture -TenantId <tenant> -OutputFolder ~/reports -PassThru
 ```
 

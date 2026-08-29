@@ -2,7 +2,7 @@
  "module_version": "0.1.0",
  "catalog_version": "2026-08-18",
  "catalog_commit": "3c4d1711",
- "generated": "2026-08-29T15:44:52+00:00",
+ "generated": "2026-08-29T16:00:35+00:00",
  "severity_weight": {
   "critical": 4,
   "high": 3,
@@ -11,7 +11,7 @@
  },
  "checks": [
   {
-   "key": "obp-expiring-creds",
+   "key": "id-expiring-creds",
    "label": "App credentials expired or expiring within 30 days",
    "domain": "App & service principal risk",
    "framework": "entra",
@@ -19,7 +19,7 @@
    "severity": "high",
    "engine": "custom",
    "plane": "graph",
-   "script": "obp/expiring-app-credentials.ps1",
+   "script": "identity/expiring-app-credentials.ps1",
    "kql": null,
    "scopes": [
     "Application.Read.All"
@@ -42,7 +42,7 @@
    ]
   },
   {
-   "key": "obp-long-lived-creds",
+   "key": "id-long-lived-creds",
    "label": "Long-lived app credentials (> 2 years)",
    "domain": "App & service principal risk",
    "framework": "entra",
@@ -50,7 +50,7 @@
    "severity": "high",
    "engine": "custom",
    "plane": "graph",
-   "script": "obp/long-lived-app-credentials.ps1",
+   "script": "identity/long-lived-app-credentials.ps1",
    "kql": null,
    "scopes": [
     "Application.Read.All"
@@ -69,7 +69,7 @@
    ]
   },
   {
-   "key": "obp-multi-tenant",
+   "key": "id-multi-tenant",
    "label": "Multi-tenant app registrations",
    "domain": "App & service principal risk",
    "framework": "entra",
@@ -77,7 +77,7 @@
    "severity": "medium",
    "engine": "custom",
    "plane": "graph",
-   "script": "obp/multi-tenant-apps.ps1",
+   "script": "identity/multi-tenant-apps.ps1",
    "kql": null,
    "scopes": [
     "Application.Read.All"
@@ -95,7 +95,7 @@
    ]
   },
   {
-   "key": "obp-multiple-secrets",
+   "key": "id-multiple-secrets",
    "label": "Apps with multiple secrets",
    "domain": "App & service principal risk",
    "framework": "entra",
@@ -103,7 +103,7 @@
    "severity": "low",
    "engine": "custom",
    "plane": "graph",
-   "script": "obp/apps-multiple-secrets.ps1",
+   "script": "identity/apps-multiple-secrets.ps1",
    "kql": null,
    "scopes": [
     "Application.Read.All"
@@ -121,7 +121,7 @@
    ]
   },
   {
-   "key": "obp-spa-secrets",
+   "key": "id-spa-secrets",
    "label": "SPA apps holding client secrets",
    "domain": "App & service principal risk",
    "framework": "entra",
@@ -129,7 +129,7 @@
    "severity": "high",
    "engine": "custom",
    "plane": "graph",
-   "script": "obp/spa-apps-with-secrets.ps1",
+   "script": "identity/spa-apps-with-secrets.ps1",
    "kql": null,
    "scopes": [
     "Application.Read.All"
@@ -147,7 +147,7 @@
    ]
   },
   {
-   "key": "obp-azdo-secrets",
+   "key": "id-azdo-secrets",
    "label": "Azure DevOps (azdo*) apps with active secrets",
    "domain": "App & service principal risk",
    "framework": "entra",
@@ -155,7 +155,7 @@
    "severity": "medium",
    "engine": "custom",
    "plane": "graph",
-   "script": "obp/azdo-apps-active-secret.ps1",
+   "script": "identity/azdo-apps-active-secret.ps1",
    "kql": null,
    "scopes": [
     "Application.Read.All"
@@ -174,7 +174,7 @@
    ]
   },
   {
-   "key": "obp-devops-naming",
+   "key": "id-devops-naming",
    "label": "DevOps-managed apps off the azdo* naming convention",
    "domain": "App & service principal risk",
    "framework": "entra",
@@ -182,7 +182,7 @@
    "severity": "low",
    "engine": "custom",
    "plane": "graph",
-   "script": "obp/devops-apps-naming.ps1",
+   "script": "identity/devops-apps-naming.ps1",
    "kql": null,
    "scopes": [
     "Application.Read.All"
@@ -201,7 +201,7 @@
    ]
   },
   {
-   "key": "obp-guests-password-only",
+   "key": "id-guests-password-only",
    "label": "Guests with password-only authentication",
    "domain": "Identity & guests",
    "framework": "entra",
@@ -209,7 +209,7 @@
    "severity": "high",
    "engine": "custom",
    "plane": "graph",
-   "script": "obp/guests-password-only.ps1",
+   "script": "identity/guests-password-only.ps1",
    "kql": null,
    "scopes": [
     "User.Read.All",
@@ -228,7 +228,7 @@
    ]
   },
   {
-   "key": "obp-privileged-accounts",
+   "key": "id-privileged-accounts",
    "label": "Privileged account sign-in & auth audit",
    "domain": "Privileged access",
    "framework": "entra",
@@ -236,7 +236,7 @@
    "severity": "critical",
    "engine": "custom",
    "plane": "graph",
-   "script": "obp/privileged-account-audit.ps1",
+   "script": "identity/privileged-account-audit.ps1",
    "kql": null,
    "scopes": [
     "RoleManagement.Read.Directory",
@@ -258,7 +258,7 @@
    ]
   },
   {
-   "key": "obp-pim-activation",
+   "key": "id-pim-activation",
    "label": "PIM role activation policy",
    "domain": "Privileged access",
    "framework": "entra",
@@ -266,7 +266,7 @@
    "severity": "medium",
    "engine": "custom",
    "plane": "graph",
-   "script": "obp/pim-activation-policy.ps1",
+   "script": "identity/pim-activation-policy.ps1",
    "kql": null,
    "scopes": [
     "RoleManagement.Read.Directory"

@@ -1,4 +1,4 @@
-# Generalized from OBP/Azure/Audit/Privilege Access/Role_Durations.ps1
+# Generalized from an earlier internal audit script.
 # Original needed a hardcoded tenant id + the external Get-PIMEntraRolePolicy module.
 # Generalized to raw Graph roleManagementPolicyAssignments (tenant from the session),
 # flagging weak PIM activation settings on privileged roles. Needs Entra ID P2.
