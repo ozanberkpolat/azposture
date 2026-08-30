@@ -86,7 +86,8 @@ function Add-CheckFindings {
 function Invoke-AzPosture {
     <#
     .SYNOPSIS
-      Run the AzPosture checklist against a tenant, read-only, and write findings.json.
+      Run the AzPosture checklist against a tenant, read-only, and write an HTML report
+      plus the findings as JSON.
     .DESCRIPTION
       Signs in ONCE as you through Microsoft's own Azure PowerShell app (browser, or
       -UseDeviceCode). That app is pre-authorised in every tenant, so there is no consent
@@ -326,17 +327,306 @@ function Invoke-AzPosture {
 
     $findings | ConvertTo-Json -Depth 8 | Out-File (Join-Path $out 'findings.json') -Encoding utf8
     $summary | ConvertTo-Json -Depth 6 | Out-File (Join-Path $out 'summary.json') -Encoding utf8
+    $report = New-AzPostureReport -Path $out -Findings $findings -Summary ([pscustomobject]$summary)
 
     Write-Host ''
     Write-Host (('{0} critical · {1} high · {2} medium · {3} low' -f $sev.critical, $sev.high, $sev.medium, $sev.low) + ('   ({0} controls pass, {1} fail, {2} not assessed)' -f $nPass, $nFail, $nSkip)) -ForegroundColor White
     if ($null -ne $score) { Write-Host ('score      {0} / 100   (85+ strong · 60 to 84 fair · under 60 at risk)' -f $score) -ForegroundColor White }
     Write-Marker 'DONE' '' 'Green'
+    Write-Host ('report     {0}' -f $report) -ForegroundColor Green
     Write-Host ('wrote      {0}' -f (Join-Path $out 'findings.json')) -ForegroundColor Green
     Write-Host ('           {0}' -f (Join-Path $out 'summary.json')) -ForegroundColor Green
-    Write-Host 'next       open the report, then get in touch if you want a second opinion on it' -ForegroundColor DarkGray
+    Write-Host 'next       open the report in a browser; it is yours to keep, print or forward' -ForegroundColor DarkGray
     Write-Host ''
 
     if ($PassThru) { [pscustomobject]$summary }
 }
 
-Export-ModuleMember -Function Invoke-AzPosture, Get-AzPostureCheck
+# ── the report ────────────────────────────────────────────────────────────────
+# One self-contained HTML file: no fonts fetched, no scripts, no images, nothing
+# external at all, so it opens from a locked-down laptop and prints to A4 as it is.
+
+$script:SevColor = @{ critical = '#C0263A'; high = '#DD6B3D'; medium = '#D9A521'; low = '#6B7787'; pass = '#1E9E6A'; skip = '#9AA4B2' }
+$script:SevLabel = @{ critical = 'Critical'; high = 'High'; medium = 'Medium'; low = 'Low' }
+$script:SevDesc = [ordered]@{
+    critical = 'Directly exploitable or exposing data today. Address immediately.'
+    high     = 'A significant weakness attackers actively look for. Address within days.'
+    medium   = 'A real gap that compounds other risks. Plan into the next change window.'
+    low      = 'Housekeeping and hygiene. Batch into routine maintenance.'
+}
+
+function Enc {
+    param($Text)
+    if ($null -eq $Text) { return '' }
+    [System.Net.WebUtility]::HtmlEncode([string]$Text)
+}
+
+function Get-ScoreBand {
+    param($Score)
+    if ($null -eq $Score) { return @{ color = '#6B7787'; word = 'not yet scored'; text = 'n/a' } }
+    if ($Score -ge 85) { return @{ color = '#1E9E6A'; word = 'a strong posture'; text = "$Score" } }
+    if ($Score -ge 60) { return @{ color = '#D9A521'; word = 'a fair posture'; text = "$Score" } }
+    @{ color = '#C0263A'; word = 'an at-risk posture'; text = "$Score" }
+}
+
+function Get-ControlRollup {
+    <# Failing findings collapse to one row per check: the control is what gets fixed,
+       the findings under it are the resources it affects. #>
+    param($Fails)
+    $groups = $Fails | Group-Object check_key
+    $rows = foreach ($g in $groups) {
+        $first = $g.Group[0]
+        [pscustomobject]@{
+            Key = $g.Name; Title = $first.title; Severity = $first.severity
+            Domain = $first.domain; Impact = $first.impact; Fix = $first.fix
+            BestPractice = $first.best_practice; Count = $g.Count; Items = $g.Group
+            Weight = $(if ($script:Weight[$first.severity]) { $script:Weight[$first.severity] } else { 1 })
+        }
+    }
+    @($rows | Sort-Object -Property @{ Expression = 'Weight'; Descending = $true }, @{ Expression = 'Count'; Descending = $true }, 'Title')
+}
+
+function New-AzPostureReport {
+    <#
+    .SYNOPSIS
+      Render a run's findings as one self-contained HTML report.
+    .DESCRIPTION
+      Invoke-AzPosture writes this alongside the JSON, so you rarely need to call it.
+      Point it at a run folder to re-render one you already have, or one you were sent.
+      Nothing is fetched: the file carries its own styling and opens offline.
+    .EXAMPLE
+      New-AzPostureReport -Path .\azposture-2026-08-30
+    #>
+    [CmdletBinding()]
+    param(
+        # Folder holding findings.json and summary.json. Defaults to the working directory.
+        [Parameter(Position = 0)] [string] $Path = '.',
+        # Where to write the HTML. Defaults to report.html inside -Path.
+        [string] $OutFile,
+        # In-memory objects, used by Invoke-AzPosture instead of reading the JSON back.
+        $Findings,
+        $Summary
+    )
+
+    if (-not $Findings) {
+        $fp = Join-Path $Path 'findings.json'
+        if (-not (Test-Path $fp)) { throw "No findings.json in $Path. Run Invoke-AzPosture first, or pass -Path to a run folder." }
+        $Findings = Get-Content $fp -Raw | ConvertFrom-Json
+    }
+    if (-not $Summary) {
+        $sp = Join-Path $Path 'summary.json'
+        if (-not (Test-Path $sp)) { throw "No summary.json in $Path." }
+        $Summary = Get-Content $sp -Raw | ConvertFrom-Json
+    }
+    if (-not $OutFile) { $OutFile = Join-Path $Path 'report.html' }
+
+    $all = @($Findings)
+    $fails = @($all | Where-Object status -eq 'fail')
+    $skips = @($all | Where-Object status -eq 'skip')
+    $controls = Get-ControlRollup $fails
+    $sev = $Summary.failing_items_by_severity
+    $counts = @{}
+    foreach ($s in 'critical', 'high', 'medium', 'low') {
+        $counts[$s] = $(if ($sev -and $sev.PSObject.Properties[$s]) { [int]$sev.$s } else { 0 })
+    }
+    $nPass = [int]$Summary.controls.pass; $nFail = [int]$Summary.controls.fail; $nSkip = [int]$Summary.controls.skip
+    $score = $(if ($null -ne $Summary.score) { [int]$Summary.score } else { $null })
+    $band = Get-ScoreBand $score
+    $when = $(try { ([datetime]$Summary.finished).ToUniversalTime().ToString('dd MMM yyyy') } catch { (Get-Date).ToString('dd MMM yyyy') })
+    $tenant = $(if ($Summary.tenant) { $Summary.tenant } else { 'this tenant' })
+
+    $b = [System.Text.StringBuilder]::new()
+    $add = { param($s) [void]$b.Append($s) }
+
+    # ── cover ─────────────────────────────────────────────────────────────────
+    $total = $nPass + $nFail
+    $segs = ''
+    foreach ($s in 'critical', 'high', 'medium', 'low') {
+        $n = @($controls | Where-Object Severity -eq $s).Count
+        if ($n -gt 0 -and $total -gt 0) {
+            $segs += ('<span class="seg" style="width:{0}%;background:{1}"></span>' -f ([Math]::Round(100 * $n / $total, 2)), $script:SevColor[$s])
+        }
+    }
+    # passing weight is the rest of the bar: green, so a clean run does not read as an empty gauge
+    if ($total -gt 0 -and $nPass -gt 0) { $segs += ('<span class="seg" style="width:{0}%;background:#8FD3B4"></span>' -f ([Math]::Round(100 * $nPass / $total, 2))) }
+    if (-not $segs) { $segs = '<span class="seg" style="width:100%;background:#DCE3EC"></span>' }
+
+    $stats = ''
+    foreach ($s in 'critical', 'high', 'medium', 'low') {
+        $stats += ('<div class="stat"><div class="num" style="color:{0}">{1}</div><div class="lbl">{2}</div></div>' -f $script:SevColor[$s], $counts[$s], $script:SevLabel[$s])
+    }
+
+    $planeWord = switch ("$($Summary.plane)") { 'Identity' { 'Entra ID only' } 'Estate' { 'the Azure estate only' } default { 'Entra ID and the Azure estate' } }
+    & $add ('<div class="cover"><div class="eyebrow">AzPosture &middot; Findings</div>' +
+        '<h1>Azure and Entra ID posture</h1>' +
+        ('<div class="sub">{0} &middot; {1} &middot; {2}</div>' -f (Enc $tenant), (Enc $when), (Enc $planeWord)) +
+        ('<div class="hero"><div class="score" style="color:{0}">{1}<small>posture score</small><span class="gword">{2}</span></div>' -f $band.color, $band.text, $band.word) +
+        ('<div class="barwrap"><div class="bar">{0}</div><div class="row">{1}</div></div></div>' -f $segs, $stats) +
+        ('<div class="tally"><b>{0}</b> controls assessed &middot; <b>{1}</b> pass &middot; <b>{2}</b> fail &middot; <b>{3}</b> not assessed &middot; checklist <b>{4}</b></div>' -f ($nPass + $nFail), $nPass, $nFail, $nSkip, (Enc $Summary.catalog_version)) +
+        '</div>')
+
+    # ── executive summary ─────────────────────────────────────────────────────
+    $sentences = @()
+    if ($nFail -eq 0) {
+        $sentences += 'No controls are failing in the areas assessed. The checklist moves as the platform does, so this is a statement about today, not a permanent one.'
+    } else {
+        $s1 = ('<b>{0}</b> of <b>{1}</b> assessed controls are failing' -f $nFail, ($nPass + $nFail))
+        if ($fails.Count -gt $nFail) { $s1 += (' across {0} individual findings' -f $fails.Count) }
+        $lead = @()
+        if ($counts['critical'] -gt 0) { $lead += ('<b>{0} critical</b>' -f $counts['critical']) }
+        if ($counts['high'] -gt 0) { $lead += ('<b>{0} high-severity</b>' -f $counts['high']) }
+        if ($lead.Count) { $s1 += ', including ' + ($lead -join ' and ') + ' items that should be addressed first' }
+        $sentences += ($s1 + '.')
+        if ($null -ne $score) {
+            $sentences += ('The weighted posture score is <b>{0} out of 100</b>, {1}. Severity is weighted 4, 3, 2 and 1, so closing one critical item moves the score as far as closing four low ones.' -f $score, $band.word)
+        }
+    }
+    if ($nSkip -gt 0) {
+        $reason = $(if ($Summary.estate_skip_reason) { ' ' + [string]$Summary.estate_skip_reason } else { '' })
+        $sentences += ('<b>{0}</b> controls were not assessed and are listed at the end.{1}' -f $nSkip, (Enc $reason))
+    }
+    & $add ('<section class="block"><h2>Executive summary</h2><p class="lead">{0}</p></section>' -f ($sentences -join ' '))
+
+    # ── top priorities ────────────────────────────────────────────────────────
+    if ($controls.Count) {
+        $critHigh = @($controls | Where-Object { $_.Severity -in 'critical', 'high' }).Count
+        $take = [Math]::Max(8, $critHigh)
+        $top = @($controls | Select-Object -First $take)
+        $items = ''
+        $i = 0
+        foreach ($c in $top) {
+            $i++
+            $head = ('<div class="phead"><span class="chip" style="--c:{0}">{1}</span><span class="pt">{2}</span>{3}</div>' -f
+                $script:SevColor[$c.Severity], $script:SevLabel[$c.Severity], (Enc $c.Title),
+                $(if ($c.Count -gt 1) { '<span class="pn">affects {0} resources</span>' -f $c.Count } else { '' }))
+            $imp = $(if ($c.Impact) { '<p class="pimp">{0}</p>' -f (Enc $c.Impact) } else { '' })
+            $act = $(if ($c.Fix) { '<p class="pact"><b>Action</b> {0}</p>' -f (Enc $c.Fix) } else { '' })
+            $bp = $(if ($c.BestPractice) { '<p class="pbp"><b>The target, and why that one</b> {0}</p>' -f (Enc $c.BestPractice) } else { '' })
+            $items += ('<div class="prio"><div class="pnum">{0}</div><div class="pbody">{1}{2}{3}{4}</div></div>' -f $i, $head, $imp, $act, $bp)
+        }
+        $more = $(if ($top.Count -lt $controls.Count) { '<p class="pmore">{0} further failing controls follow in the findings below.</p>' -f ($controls.Count - $top.Count) } else { '' })
+        & $add ('<section class="block"><h2>Top priorities</h2><p class="secsub">What to fix first, and why it matters. Ordered by severity weight, then by how many resources each one affects.</p>{0}{1}</section>' -f $items, $more)
+    }
+
+    # ── every finding, by domain ──────────────────────────────────────────────
+    if ($controls.Count) {
+        $byDomain = $controls | Group-Object Domain | Sort-Object { -(@($_.Group | Measure-Object Weight -Sum).Sum) }
+        $blocks = ''
+        foreach ($d in $byDomain) {
+            $rows = ''
+            foreach ($c in ($d.Group | Sort-Object -Property @{ Expression = 'Weight'; Descending = $true }, 'Title')) {
+                $lines = ''
+                $shown = @($c.Items | Select-Object -First 12)
+                foreach ($it in $shown) {
+                    $detail = $(if ($it.detail) { '<span class="fd">{0}</span>' -f (Enc $it.detail) } else { '' })
+                    $lines += ('<li>{0}{1}</li>' -f (Enc $it.title), $detail)
+                }
+                if ($c.Items.Count -gt $shown.Count) { $lines += ('<li class="fmore">and {0} more</li>' -f ($c.Items.Count - $shown.Count)) }
+                $rows += ('<div class="fctl"><div class="fhead"><span class="chip" style="--c:{0}">{1}</span><span class="ft">{2}</span><span class="fn">{3}</span></div><ul class="flist">{4}</ul></div>' -f
+                    $script:SevColor[$c.Severity], $script:SevLabel[$c.Severity], (Enc $c.Title),
+                    $(if ($c.Count -gt 1) { "$($c.Count) resources" } else { '1 resource' }), $lines)
+            }
+            $blocks += ('<div class="dom"><h3>{0}</h3>{1}</div>' -f (Enc $d.Name), $rows)
+        }
+        & $add ('<section class="block"><h2>Findings by domain</h2><p class="secsub">Every failing control, with the resources it names.</p>{0}</section>' -f $blocks)
+    }
+
+    # ── not assessed ──────────────────────────────────────────────────────────
+    if ($skips.Count) {
+        $sk = @($skips | Group-Object check_key | ForEach-Object {
+                '<li>{0}{1}</li>' -f (Enc $_.Group[0].title),
+                $(if ($_.Group[0].detail) { '<span class="fd">{0}</span>' -f (Enc $_.Group[0].detail) } else { '' })
+            })
+        & $add ('<section class="block"><h2>Not assessed</h2><p class="secsub">Nothing here passed or failed. A control is skipped when the licence, the role or the service it inspects was not present.</p><ul class="flist">{0}</ul></section>' -f ($sk -join ''))
+    }
+
+    # ── methodology ───────────────────────────────────────────────────────────
+    $sevRows = ''
+    foreach ($k in $script:SevDesc.Keys) {
+        $sevRows += ('<div class="mrow"><span class="chip" style="--c:{0}">{1}</span><span>{2}</span></div>' -f $script:SevColor[$k], $script:SevLabel[$k], $script:SevDesc[$k])
+    }
+    & $add ('<section class="block"><h2>How this was measured</h2>' +
+        ('<p class="secsub">Read-only throughout. The run used Microsoft Graph and Azure Resource Graph under the signed-in account, wrote to this machine only, and changed nothing in the tenant. Checklist <b>{0}</b>, module <b>{1}</b>, run finished {2}.</p>' -f (Enc $Summary.catalog_version), (Enc $Summary.module_version), (Enc $when)) +
+        '<p class="secsub">The posture score is the share of severity weight that passes: each control counts 4, 3, 2 or 1 by its severity, so the score answers "how much of what matters is in place", not "how many boxes are ticked". Above 85 is strong, 60 to 84 fair, below 60 at risk. A control that could not be assessed is left out of the score entirely rather than counted as a pass.</p>' +
+        $sevRows + '</section>')
+
+    $doc = ('<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">' +
+        '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+        ('<title>{0}, AzPosture findings, {1}</title>' -f (Enc $tenant), (Enc $when)) +
+        $script:ReportCss + '</head><body><div class="page">' + $b.ToString() +
+        ('<footer><span>Generated {0} by AzPosture {1}, checklist {2}</span><span>Run on your own machine. Nothing left the tenant.</span></footer>' -f (Enc $when), (Enc $Summary.module_version), (Enc $Summary.catalog_version)) +
+        '</div></body></html>')
+
+    [System.IO.File]::WriteAllText($OutFile, $doc, [System.Text.UTF8Encoding]::new($false))
+    (Resolve-Path $OutFile).Path
+}
+
+$script:ReportCss = @'
+<style>
+  :root{--ink:#151A22;--muted:#59616E;--faint:#8A93A0;--line:#E7EAF0;--paper:#F4F5F8;--card:#fff;
+    --brand:#5B3FD8;--brand-soft:#F0EDFD;
+    --sans:system-ui,-apple-system,"Segoe UI Variable Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:"Cascadia Mono",Consolas,"SF Mono",Menlo,monospace}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;
+    -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+  .page{max-width:940px;margin:0 auto;padding:52px 44px 80px}
+  .cover{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:38px 40px 30px;margin-bottom:26px}
+  .eyebrow{text-transform:uppercase;letter-spacing:.2em;font-size:11px;color:var(--brand);font-weight:600}
+  h1{font-size:38px;font-weight:680;letter-spacing:-.02em;line-height:1.08;margin:12px 0 4px}
+  .sub{color:var(--muted);font-size:14.5px}
+  .hero{display:flex;gap:38px;align-items:center;margin:28px 0 22px}
+  .score{font-weight:680;font-size:74px;line-height:.9;letter-spacing:-.03em;flex:none}
+  .score small{display:block;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-top:10px;font-weight:600}
+  .score .gword{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-top:5px;letter-spacing:0}
+  .barwrap{flex:1;min-width:0}
+  .bar{display:flex;height:12px;border-radius:999px;overflow:hidden;background:#DCE3EC}
+  .seg{display:block;height:100%}
+  .row{display:flex;gap:26px;margin-top:16px}
+  .stat .num{font-weight:680;font-size:26px;letter-spacing:-.02em}
+  .stat .lbl{text-transform:uppercase;letter-spacing:.13em;font-size:9.5px;color:var(--faint);margin-top:3px;font-weight:600}
+  .tally{border-top:1px solid var(--line);padding-top:14px;color:var(--muted);font-size:13px}
+  .tally b{color:var(--ink);font-weight:600}
+  .block{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:28px 32px 30px;margin-bottom:22px}
+  h2{font-size:21px;font-weight:640;letter-spacing:-.01em;margin:0 0 4px}
+  h3{font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--brand);margin:26px 0 10px}
+  .dom:first-child h3{margin-top:8px}
+  .secsub{color:var(--muted);margin:0 0 18px;font-size:13.5px}
+  .lead{margin:14px 0 0;font-size:15.5px;line-height:1.65}
+  .lead b{font-weight:640}
+  .chip{display:inline-block;flex:none;color:var(--c);border:1px solid var(--c);border-radius:999px;
+    padding:1px 9px;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+  .prio{display:flex;gap:16px;padding:16px 0;border-top:1px solid var(--line);break-inside:avoid;page-break-inside:avoid}
+  .prio:first-of-type{border-top:0;padding-top:4px}
+  .pnum{font-weight:640;font-size:15px;color:var(--brand);background:var(--brand-soft);border-radius:9px;
+    width:30px;height:30px;display:flex;align-items:center;justify-content:center;flex:none}
+  .pbody{min-width:0}
+  .phead{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px}
+  .pt{font-weight:640;font-size:15px}
+  .pn{font-size:11.5px;color:var(--faint);font-weight:500}
+  .pimp,.pact,.pbp{margin:0 0 5px;color:var(--muted);font-size:13.5px;line-height:1.6}
+  .pact b,.pbp b{color:var(--ink);font-weight:600;margin-right:6px}
+  .pmore{margin:14px 0 0;color:var(--faint);font-size:13px}
+  .fctl{padding:14px 0;border-top:1px solid var(--line);break-inside:avoid;page-break-inside:avoid}
+  .fhead{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .ft{font-weight:600;font-size:14px}
+  .fn{font-size:11.5px;color:var(--faint);margin-left:auto}
+  .flist{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:13px;line-height:1.7}
+  .flist li{break-inside:avoid;page-break-inside:avoid}
+  .fd{display:block;font-family:var(--mono);font-size:11.5px;color:var(--faint);word-break:break-all}
+  .fmore{color:var(--faint);list-style:none;margin-left:-18px}
+  .mrow{display:flex;gap:12px;align-items:baseline;padding:7px 0;color:var(--muted);font-size:13.5px}
+  footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:var(--faint);font-size:11.5px;padding:6px 4px 0}
+  @media print{
+    body{background:#fff}
+    .page{max-width:none;padding:0}
+    .cover,.block{border-radius:0;border-width:0 0 1px 0;padding-left:0;padding-right:0;margin-bottom:14px}
+    .block{break-inside:auto}
+    h2{break-after:avoid;page-break-after:avoid}
+    footer{padding-top:10px}
+  }
+  @page{size:A4;margin:16mm 14mm 18mm}
+</style>
+'@
+
+Export-ModuleMember -Function Invoke-AzPosture, Get-AzPostureCheck, New-AzPostureReport

@@ -3,7 +3,7 @@
 Measure an Azure and Entra ID tenant against a maintained checklist of 130 read-only
 checks across security, cost, reliability and governance. It runs on your own machine,
 under your own sign-in. Nothing is installed in the tenant and nothing is uploaded: the
-output is `findings.json` on your disk, and it is yours to keep.
+output is a report and the raw findings on your disk, and they are yours to keep.
 
 ```powershell
 Install-Module AzPosture -Scope CurrentUser -AllowPrerelease
@@ -30,9 +30,10 @@ estate     87 checks
 7 critical · 53 high · 46 medium · 24 low   (61 controls pass, 66 fail, 3 not assessed)
 score      58 / 100   (85+ strong · 60 to 84 fair · under 60 at risk)
 AZPOSTURE::DONE
+report     ./azposture/2026-08-29-1532/report.html
 wrote      ./azposture/2026-08-29-1532/findings.json
            ./azposture/2026-08-29-1532/summary.json
-next       open the report, then get in touch if you want a second opinion on it
+next       open the report in a browser; it is yours to keep, print or forward
 ```
 
 The numbers above are illustrative. Yours will differ.
@@ -107,6 +108,19 @@ Nothing. Sign-in goes to Microsoft; every request is a read; the findings are wr
 the folder you chose. There is no telemetry, no upload endpoint, and no account.
 
 ## Output
+
+`report.html` is the run as a document: the weighted score and what band it falls in, an
+executive summary, the priorities in the order the score says to take them (each with why
+it matters, the action, and the target the check was held to), every failing control by
+domain with the resources it names, what could not be assessed and why, and how the score
+was arrived at. It is one self-contained file: no fonts, scripts or images are fetched, so
+it opens on a machine with no internet and prints to A4 as it stands.
+
+Re-render one you already have, or one you were sent, without running the checks again:
+
+```powershell
+New-AzPostureReport -Path .\azposture\2026-08-29-1532
+```
 
 `findings.json` holds one row per finding with the check key, framework, domain,
 severity, status (`pass`, `fail`, `skip`), the measured detail, the fix, the resource id

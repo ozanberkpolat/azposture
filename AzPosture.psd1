@@ -9,7 +9,7 @@
     PowerShellVersion = '7.2'
     CompatiblePSEditions = @('Core')
     RequiredModules   = @(@{ ModuleName = 'Az.Accounts'; ModuleVersion = '2.13.0' }, @{ ModuleName = 'Microsoft.Graph.Authentication'; ModuleVersion = '2.0.0' })
-    FunctionsToExport = @('Invoke-AzPosture', 'Get-AzPostureCheck')
+    FunctionsToExport = @('Invoke-AzPosture', 'Get-AzPostureCheck', 'New-AzPostureReport')
     CmdletsToExport   = @()
     VariablesToExport = @()
     AliasesToExport   = @()
@@ -17,7 +17,7 @@
     PrivateData       = @{
         PSData = @{
             Tags = @('Azure', 'EntraID', 'Assessment', 'Posture', 'Security', 'Cost', 'Governance', 'Reliability', 'ResourceGraph', 'Graph', 'PSEdition_Core')
-            Prerelease = 'preview6'
+            Prerelease = 'preview7'
             ExternalModuleDependencies = @('Az.ResourceGraph')
             ReleaseNotes = 'Public preview. One sign-in through Microsoft Azure PowerShell serves both planes: no consent dialog, a Global Reader is enough for identity, Reader on subscriptions for the estate. Estate checks also need Az.ResourceGraph; without it or a readable subscription they are reported as not assessed, never silently skipped. -GraphConsent selects the explicit-scopes route for tenants that block Azure PowerShell.'
         }
