@@ -109,12 +109,16 @@ the folder you chose. There is no telemetry, no upload endpoint, and no account.
 
 ## Output
 
-`report.html` is the run as a document: the weighted score and what band it falls in, an
-executive summary, the priorities in the order the score says to take them (each with why
-it matters, the action, and the target the check was held to), every failing control by
-domain with the resources it names, what could not be assessed and why, and how the score
-was arrived at. It is one self-contained file: no fonts, scripts or images are fetched, so
-it opens on a machine with no internet and prints to A4 as it stands.
+`report.html` is the run as an interactive document: a score gauge and a severity ring, an
+executive summary, where the failures are concentrated by domain, the priorities in the order
+the score says to take them, and every control the run selected in a table you can filter by
+status, severity and domain, search, and open for the reasoning, the action, the target the
+check was held to and the resources it names.
+
+It is one self-contained file. No fonts, scripts, images or data are fetched from anywhere:
+the charts are inline SVG and the filtering is inline script, so it opens on a machine with no
+internet, and printing it expands every row so a filtered screen never becomes a partial
+document.
 
 Re-render one you already have, or one you were sent, without running the checks again:
 
