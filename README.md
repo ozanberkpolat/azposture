@@ -111,8 +111,9 @@ the folder you chose. There is no telemetry, no upload endpoint, and no account.
 
 `report.html` is the run as an interactive document: a score gauge and a severity ring, an
 executive summary, where the failures are concentrated by domain, the priorities in the order
-the score says to take them, and every control the run selected in a table you can filter by
-status, severity and domain, search, and open for the reasoning, the action, the target the
+the score says to take them, which Azure resources carry the most
+failing controls, and every control the run selected in a table you can filter by status,
+severity and domain, search by control or by resource name, and open for the reasoning, the action, the target the
 check was held to and the resources it names.
 
 It is one self-contained file. No fonts, scripts, images or data are fetched from anywhere:

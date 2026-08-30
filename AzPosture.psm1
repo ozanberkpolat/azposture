@@ -392,6 +392,30 @@ function Get-ControlRollup {
     @($rows | Sort-Object -Property @{ Expression = 'Weight'; Descending = $true }, @{ Expression = 'Count'; Descending = $true }, 'Title')
 }
 
+function Get-ResourceRollup {
+    <# The estate side of a run names ARM resources, so the same findings regroup by
+       resource: which ones carry the most failing controls, worst severity first.
+       Identity findings carry no resource id and are left out by design. #>
+    param($Fails)
+    $withId = @($Fails | Where-Object { $_.resource_id })
+    if (-not $withId.Count) { return @() }
+    $rows = foreach ($g in ($withId | Group-Object resource_id)) {
+        $id = $g.Name
+        $leaf = ($id -split '/')[-1]
+        $rg = ''
+        $parts = $id -split '/'
+        for ($i = 0; $i -lt $parts.Count - 1; $i++) { if ($parts[$i] -eq 'resourceGroups') { $rg = $parts[$i + 1] } }
+        $worst = @($g.Group | Sort-Object { -$(if ($script:Weight[$_.severity]) { $script:Weight[$_.severity] } else { 1 }) })[0].severity
+        [pscustomobject]@{
+            Id = $id; Name = $(if ($leaf) { $leaf } else { $id }); Group = $rg
+            Controls = @($g.Group | Select-Object -ExpandProperty check_key -Unique).Count
+            Severity = $worst
+            Weight = (@($g.Group | ForEach-Object { $(if ($script:Weight[$_.severity]) { $script:Weight[$_.severity] } else { 1 }) } | Measure-Object -Sum).Sum)
+        }
+    }
+    @($rows | Sort-Object -Property @{ Expression = 'Weight'; Descending = $true }, @{ Expression = 'Controls'; Descending = $true }, 'Name')
+}
+
 function New-AzPostureDonut {
     <# A severity ring drawn as stroked arcs on one circle: no library, no canvas. #>
     param($Counts, [int] $Total)
@@ -539,6 +563,21 @@ function New-AzPostureReport {
         & $add ('<section class="block"><h2>Where it is concentrated</h2><p class="secsub">Failing controls by domain, weighted by severity. Click a domain to filter.</p><div class="bars">{0}</div></section>' -f $bars)
     }
 
+    # ── the resources carrying it ─────────────────────────────────────────────
+    $resources = Get-ResourceRollup $fails
+    if ($resources.Count) {
+        $top = @($resources | Select-Object -First 12)
+        $maxW = ($top | Measure-Object Weight -Maximum).Maximum
+        $rrows = ''
+        foreach ($r in $top) {
+            $rrows += ('<button type="button" class="res" data-res="{0}"><span class="rn">{1}</span><span class="rg">{2}</span><span class="bt"><i style="width:{3}%;background:{4}"></i></span><span class="rv">{5}</span></button>' -f
+                (Enc $r.Name), (Enc $r.Name), (Enc $r.Group), [Math]::Round(100 * $r.Weight / [Math]::Max($maxW, 1)),
+                $script:SevColor[$r.Severity], $(if ($r.Controls -eq 1) { '1 control' } else { "$($r.Controls) controls" }))
+        }
+        $more = $(if ($resources.Count -gt $top.Count) { '<p class="pmore">{0} further resources are named in the findings below.</p>' -f ($resources.Count - $top.Count) } else { '' })
+        & $add ('<section class="block"><h2>The resources carrying it</h2><p class="secsub">{0} Azure resources are named by a failing control. These carry the most, weighted by severity. Click one to see every control that names it.</p><div class="bars">{1}</div>{2}</section>' -f $resources.Count, $rrows, $more)
+    }
+
     # ── top priorities ────────────────────────────────────────────────────────
     if ($failControls.Count) {
         $critHigh = @($failControls | Where-Object { $_.Severity -in 'critical', 'high' }).Count
@@ -587,8 +626,10 @@ function New-AzPostureReport {
                 $(if ($c.MinRole) { '<span>role <b>{0}</b></span>' -f (Enc $c.MinRole) } else { '' }),
                 $(if ($c.Licence) { '<span>licence <b>{0}</b></span>' -f (Enc $c.Licence) } else { '' })) +
             '</div>')
+        $idx = "$($c.Title) $($c.Domain) $($c.Key)"
+        foreach ($it in ($c.Items | Select-Object -First 40)) { $idx += " $($it.title) $($it.detail) $($it.resource_id)" }
         $rows += ('<div class="ctl" data-status="{0}" data-sev="{1}" data-domain="{2}" data-text="{3}">' -f
-            $c.Status, $c.Severity, (Enc $c.Domain), (Enc (("$($c.Title) $($c.Domain) $($c.Key)").ToLower())) +
+            $c.Status, $c.Severity, (Enc $c.Domain), (Enc ($idx.ToLower())) +
             ('<button type="button" class="chead" aria-expanded="false">{0}<span class="ct">{1}</span><span class="cd">{2}</span><span class="cn">{3}</span><span class="carrow" aria-hidden="true"></span></button>' -f
                 $statusChip, (Enc $c.Title), (Enc $c.Domain),
                 $(if ($c.Status -eq 'fail' -and $c.Count -gt 1) { "$($c.Count) resources" } elseif ($c.Status -eq 'fail') { '1 resource' } else { '' })) +
@@ -698,6 +739,11 @@ $script:ReportCss = @'
   .bt{display:block;height:9px;border-radius:999px;background:#EDF0F5;overflow:hidden}
   .bt i{display:block;height:100%;border-radius:999px}
   .bv{font-size:12px;color:var(--faint);text-align:right}
+  .res{display:grid;grid-template-columns:200px 130px minmax(0,1fr) 78px;gap:14px;align-items:center;padding:7px 8px;border-radius:8px;text-align:left}
+  .res:hover{background:var(--brand-soft)}
+  .rn{font-size:13px;font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rg{font-size:11.5px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rv{font-size:12px;color:var(--faint);text-align:right}
 
   .prio{display:flex;gap:16px;padding:16px 0;border-top:1px solid var(--line);break-inside:avoid;page-break-inside:avoid}
   .prio:first-of-type{border-top:0;padding-top:2px}
@@ -754,6 +800,8 @@ $script:ReportCss = @'
     .cd,.cn{display:none}
     .det{padding-left:12px}
     .bar{grid-template-columns:120px minmax(0,1fr) 30px}
+    .res{grid-template-columns:minmax(0,1fr) 70px}
+    .res .rg,.res .bt{display:none}
     .hero{padding:24px 20px}
     .block{padding:22px 20px 24px}
   }
@@ -841,6 +889,17 @@ $script:ReportJs = @'
       document.querySelectorAll('.fchip').forEach(function (ch) {
         ch.classList.toggle('on', (ch.dataset.f === 'sev' && ch.dataset.v === v) || (ch.dataset.f === 'status' && ch.dataset.v === 'fail'));
       });
+      apply();
+      document.getElementById('controls').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+  document.querySelectorAll('.res[data-res]').forEach(function (r) {
+    r.addEventListener('click', function () {
+      var q = r.dataset.res.toLowerCase();
+      state.q = q; state.sev = []; state.domain = '';
+      document.getElementById('fsearch').value = r.dataset.res;
+      document.getElementById('fdomain').value = '';
+      document.querySelectorAll('.fchip[data-f="sev"]').forEach(function (ch) { ch.classList.remove('on'); });
       apply();
       document.getElementById('controls').scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
