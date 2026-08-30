@@ -440,17 +440,19 @@ function New-AzPostureDonut {
 }
 
 function New-AzPostureGauge {
-    <# The score as a 240 degree arc, filled to the score. #>
+    <# The score as a real 240 degree arc. The dash length must be the arc's OWN length:
+       an earlier version drew a semicircle and measured it as 240 degrees, so every score
+       painted about a third further round the dial than it should have. #>
     param($Band)
     $pct = [Math]::Max(0, [Math]::Min(100, [int]$Band.pct))
-    $r = 62; $sweep = 240.0
-    $len = [Math]::PI * $r * ($sweep / 180.0)
+    $len = 259.70
     $fill = $len * $pct / 100.0
-    ('<svg class="gauge" viewBox="0 0 160 116" width="160" height="116" role="img" aria-label="posture score">' +
-        ('<path d="M 18 96 A {0} {0} 0 1 1 142 96" fill="none" stroke="#EDF0F5" stroke-width="13" stroke-linecap="round"></path>' -f $r) +
-        ('<path d="M 18 96 A {0} {0} 0 1 1 142 96" fill="none" stroke="{1}" stroke-width="13" stroke-linecap="round" stroke-dasharray="{2:F2} {3:F2}"></path>' -f $r, $Band.color, $fill, ($len - $fill)) +
-        ('<text x="80" y="80" text-anchor="middle" class="gnum" fill="{0}">{1}</text>' -f $Band.color, $Band.text) +
-        '<text x="80" y="100" text-anchor="middle" class="glbl">posture score</text></svg>')
+    $d = 'M 26.31 109.00 A 62 62 0 1 1 133.69 109.00'
+    ('<svg class="gauge" viewBox="0 0 160 124" width="160" height="124" role="img" aria-label="posture score">' +
+        ('<path d="{0}" fill="none" stroke="#EDF0F5" stroke-width="13" stroke-linecap="round"></path>' -f $d) +
+        ('<path d="{0}" fill="none" stroke="{1}" stroke-width="13" stroke-linecap="round" stroke-dasharray="{2:F2} {3:F2}"></path>' -f $d, $Band.color, $fill, ($len - $fill)) +
+        ('<text x="80" y="86" text-anchor="middle" class="gnum" fill="{0}">{1}</text>' -f $Band.color, $Band.text) +
+        '<text x="80" y="104" text-anchor="middle" class="glbl">posture score</text></svg>')
 }
 
 function New-AzPostureReport {

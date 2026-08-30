@@ -1,8 +1,8 @@
 {
  "module_version": "0.1.0",
  "catalog_version": "2026-08-30",
- "catalog_commit": "0c4fc21e",
- "generated": "2026-08-30T15:45:26+00:00",
+ "catalog_commit": "0f0e8dba",
+ "generated": "2026-08-30T16:43:59+00:00",
  "severity_weight": {
   "critical": 4,
   "high": 3,
