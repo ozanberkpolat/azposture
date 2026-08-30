@@ -113,7 +113,8 @@ the folder you chose. There is no telemetry, no upload endpoint, and no account.
 executive summary, where the failures are concentrated by domain, the priorities in the order
 the score says to take them, which Azure resources carry the most
 failing controls, and every control the run selected in a table you can filter by status,
-severity and domain, search by control or by resource name, and open for the reasoning, the action, the target the
+severity, domain and whether Defender for Cloud already reports it, search by control or by
+resource name, and open for the reasoning, the action, the target the
 check was held to and the resources it names.
 
 It is one self-contained file. No fonts, scripts, images or data are fetched from anywhere:
@@ -132,6 +133,17 @@ severity, status (`pass`, `fail`, `skip`), the measured detail, the fix, the res
 where one exists, and the check's own reasoning: why it matters and what the target is.
 `summary.json` holds the tally, the weighted score (critical 4, high 3, medium 2, low 1)
 and which checklist version produced it.
+
+## What Defender for Cloud already tells you
+
+Every check records whether Microsoft Defender for Cloud reports the same thing, and the report
+can filter down to the ones it does not. **69 of the 130 look at something Defender does not
+report on**, which is the honest reason to run this alongside it rather than instead of it:
+Defender for Cloud is a security product for Azure resources, so it does not price anything, it
+does not look for what you stopped using, it does not judge whether a workload survives a zone
+failure, it does not care whether a resource is tagged or owned, and it does not assess Entra ID
+at all. The mapping is our own assessment of overlap, not a Microsoft statement, and it is
+deliberately generous: anything plausibly covered is marked covered, so that count is a floor.
 
 ## The checklist
 

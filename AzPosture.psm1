@@ -375,13 +375,15 @@ function Get-ControlRollup {
        findings under it are the resources it affects. A finding's own title names the
        RESOURCE, so the control's name comes from the catalog; only a key the catalog does
        not know falls back to the first finding's title. #>
-    param($Items, $Labels)
+    param($Items, $Labels, $Defender)
     $groups = $Items | Group-Object check_key
     $rows = foreach ($g in $groups) {
         $first = $g.Group[0]
         $label = $(if ($Labels -and $Labels.ContainsKey($g.Name)) { $Labels[$g.Name] } else { $first.title })
+        # $null when the catalog does not know the key: no claim is made either way
+        $cov = $(if ($Defender -and $Defender.ContainsKey($g.Name)) { $Defender[$g.Name] } else { $null })
         [pscustomobject]@{
-            Key = $g.Name; Title = $label; Severity = $first.severity
+            Key = $g.Name; Title = $label; Severity = $first.severity; Defender = $cov
             Domain = $(if ($first.domain) { $first.domain } else { 'Other' })
             Impact = $first.impact; Fix = $first.fix; BestPractice = $first.best_practice
             Status = $first.status; MinRole = $first.min_role; Licence = $first.licence
@@ -487,10 +489,16 @@ function New-AzPostureReport {
 
     $all = @($Findings)
     $fails = @($all | Where-Object status -eq 'fail')
-    $labels = @{}
-    try { foreach ($c in (Get-AzPostureCatalog).checks) { $labels[$c.key] = $c.label } } catch { }
-    $failControls = Get-ControlRollup $fails $labels
-    $allControls = Get-ControlRollup $all $labels
+    $labels = @{}; $defender = @{}
+    try {
+        foreach ($c in (Get-AzPostureCatalog).checks) {
+            $labels[$c.key] = $c.label
+            if ($c.PSObject.Properties['defender'] -and $null -ne $c.defender) { $defender[$c.key] = [bool]$c.defender }
+        }
+    } catch { }
+    $failControls = Get-ControlRollup $fails $labels $defender
+    $allControls = Get-ControlRollup $all $labels $defender
+    $gap = @($failControls | Where-Object { $_.Defender -eq $false })
     $sev = $Summary.failing_items_by_severity
     $counts = @{}
     foreach ($s in 'critical', 'high', 'medium', 'low') {
@@ -542,6 +550,9 @@ function New-AzPostureReport {
         if ($null -ne $score) {
             $sentences += ('The weighted posture score is <b>{0} out of 100</b>, {1}. Severity is weighted 4, 3, 2 and 1, so closing one critical item moves the score as far as closing four low ones.' -f $score, $band.word)
         }
+    }
+    if ($gap.Count) {
+        $sentences += ('<b>{0}</b> of the failing controls look at something Defender for Cloud does not report on, so they would not appear in a portal anyone is already watching.' -f $gap.Count)
     }
     if ($nSkip -gt 0) {
         $reason = $(if ($Summary.estate_skip_reason) { ' ' + [string]$Summary.estate_skip_reason } else { '' })
@@ -628,10 +639,11 @@ function New-AzPostureReport {
             '</div>')
         $idx = "$($c.Title) $($c.Domain) $($c.Key)"
         foreach ($it in ($c.Items | Select-Object -First 40)) { $idx += " $($it.title) $($it.detail) $($it.resource_id)" }
-        $rows += ('<div class="ctl" data-status="{0}" data-sev="{1}" data-domain="{2}" data-text="{3}">' -f
-            $c.Status, $c.Severity, (Enc $c.Domain), (Enc ($idx.ToLower())) +
+        $gapChip = $(if ($c.Defender -eq $false) { '<span class="gapchip" title="Defender for Cloud does not report this">outside Defender</span>' } else { '' })
+        $rows += ('<div class="ctl" data-status="{0}" data-sev="{1}" data-domain="{2}" data-gap="{4}" data-text="{3}">' -f
+            $c.Status, $c.Severity, (Enc $c.Domain), (Enc ($idx.ToLower())), $(if ($c.Defender -eq $false) { '1' } else { '0' }) +
             ('<button type="button" class="chead" aria-expanded="false">{0}<span class="ct">{1}</span><span class="cd">{2}</span><span class="cn">{3}</span><span class="carrow" aria-hidden="true"></span></button>' -f
-                $statusChip, (Enc $c.Title), (Enc $c.Domain),
+                ('<span class="cchips">' + $statusChip + $gapChip + '</span>'), (Enc $c.Title), (Enc $c.Domain),
                 $(if ($c.Status -eq 'fail' -and $c.Count -gt 1) { "$($c.Count) resources" } elseif ($c.Status -eq 'fail') { '1 resource' } else { '' })) +
             $detail + '</div>')
     }
@@ -645,6 +657,8 @@ function New-AzPostureReport {
         '<button type="button" class="fchip" data-f="sev" data-v="high">High</button>' +
         '<button type="button" class="fchip" data-f="sev" data-v="medium">Medium</button>' +
         '<button type="button" class="fchip" data-f="sev" data-v="low">Low</button>' +
+        '<span class="fgap"></span>' +
+        '<button type="button" class="fchip" id="fgapchip" title="Controls Defender for Cloud does not report on">Outside Defender</button>' +
         '</div><div class="frow">' +
         ('<select id="fdomain" aria-label="Filter by domain"><option value="">Every domain</option>{0}</select>' -f $domainOpts) +
         '<input id="fsearch" type="search" placeholder="Search controls" aria-label="Search controls">' +
@@ -772,8 +786,11 @@ $script:ReportCss = @'
   .ctl{border-top:1px solid var(--line)}
   .ctl:first-child{border-top:0}
   .ctl[hidden]{display:none}
-  .chead{display:grid;grid-template-columns:94px minmax(0,1fr) 170px 92px 16px;gap:14px;align-items:center;
+  .chead{display:grid;grid-template-columns:200px minmax(0,1fr) 150px 92px 16px;gap:14px;align-items:center;
     width:100%;padding:12px 6px;text-align:left;border-radius:8px}
+  .cchips{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .gapchip{display:inline-block;color:#5B3FD8;background:var(--brand-soft);border-radius:999px;padding:1px 8px;
+    font-size:10px;font-weight:600;letter-spacing:.04em;white-space:nowrap}
   .chead:hover{background:var(--brand-soft)}
   .ct{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .cd,.cn{font-size:12px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -781,7 +798,7 @@ $script:ReportCss = @'
   .carrow{width:8px;height:8px;border-right:1.6px solid var(--faint);border-bottom:1.6px solid var(--faint);
     transform:rotate(45deg);margin:0 auto;transition:transform .18s}
   .ctl.open .carrow{transform:rotate(-135deg)}
-  .det{display:none;padding:2px 6px 20px 108px}
+  .det{display:none;padding:2px 6px 20px 214px}
   .ctl.open .det{display:block}
   .dsec{margin-bottom:12px}
   .dsec h4{margin:0 0 3px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);font-weight:600}
@@ -796,7 +813,7 @@ $script:ReportCss = @'
   footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:var(--faint);font-size:11.5px;padding:6px 4px 0}
 
   @media (max-width:760px){
-    .chead{grid-template-columns:80px minmax(0,1fr) 16px}
+    .chead{grid-template-columns:minmax(0,1fr) 16px}
     .cd,.cn{display:none}
     .det{padding-left:12px}
     .bar{grid-template-columns:120px minmax(0,1fr) 30px}
@@ -825,7 +842,7 @@ $script:ReportCss = @'
 $script:ReportJs = @'
 <script>
 (function () {
-  var state = { status: ['fail'], sev: [], domain: '', q: '' };
+  var state = { status: ['fail'], sev: [], domain: '', q: '', gap: false };
   var ctls = Array.prototype.slice.call(document.querySelectorAll('.ctl'));
   var count = document.getElementById('fcount');
   var empty = document.getElementById('fempty');
@@ -835,6 +852,7 @@ $script:ReportJs = @'
     ctls.forEach(function (c) {
       var ok = (!state.status.length || state.status.indexOf(c.dataset.status) > -1)
         && (!state.sev.length || (c.dataset.status === 'fail' && state.sev.indexOf(c.dataset.sev) > -1))
+        && (!state.gap || c.dataset.gap === '1')
         && (!state.domain || c.dataset.domain === state.domain)
         && (!state.q || c.dataset.text.indexOf(state.q) > -1);
       c.hidden = !ok;
@@ -844,7 +862,7 @@ $script:ReportJs = @'
     empty.hidden = shown > 0;
   }
 
-  document.querySelectorAll('.fchip').forEach(function (chip) {
+  document.querySelectorAll('.fchip[data-f]').forEach(function (chip) {
     chip.addEventListener('click', function () {
       var k = chip.dataset.f, v = chip.dataset.v, list = state[k], i = list.indexOf(v);
       if (i > -1) { list.splice(i, 1); chip.classList.remove('on'); }
@@ -856,6 +874,13 @@ $script:ReportJs = @'
       }
       apply();
     });
+  });
+
+  var gapChip = document.getElementById('fgapchip');
+  gapChip.addEventListener('click', function () {
+    state.gap = !state.gap;
+    gapChip.classList.toggle('on', state.gap);
+    apply();
   });
 
   document.getElementById('fdomain').addEventListener('change', function (e) { state.domain = e.target.value; apply(); });
@@ -886,7 +911,7 @@ $script:ReportJs = @'
     s.addEventListener('click', function () {
       var v = s.dataset.jump;
       state.sev = [v]; state.status = ['fail'];
-      document.querySelectorAll('.fchip').forEach(function (ch) {
+      document.querySelectorAll('.fchip[data-f]').forEach(function (ch) {
         ch.classList.toggle('on', (ch.dataset.f === 'sev' && ch.dataset.v === v) || (ch.dataset.f === 'status' && ch.dataset.v === 'fail'));
       });
       apply();
