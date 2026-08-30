@@ -134,16 +134,32 @@ where one exists, and the check's own reasoning: why it matters and what the tar
 `summary.json` holds the tally, the weighted score (critical 4, high 3, medium 2, low 1)
 and which checklist version produced it.
 
-## What Defender for Cloud already tells you
+## What the tools you already run do not tell you
 
-Every check records whether Microsoft Defender for Cloud reports the same thing, and the report
-can filter down to the ones it does not. **69 of the 130 look at something Defender does not
-report on**, which is the honest reason to run this alongside it rather than instead of it:
-Defender for Cloud is a security product for Azure resources, so it does not price anything, it
-does not look for what you stopped using, it does not judge whether a workload survives a zone
-failure, it does not care whether a resource is tagged or owned, and it does not assess Entra ID
-at all. The mapping is our own assessment of overlap, not a Microsoft statement, and it is
-deliberately generous: anything plausibly covered is marked covered, so that count is a floor.
+Every check records whether Microsoft Defender for Cloud reports the same thing and whether
+Maester tests it, and the report can filter down to the ones neither does.
+
+| | not covered |
+| --- | --- |
+| Defender for Cloud | 69 of 130 |
+| Maester | 103 of 130 |
+| **neither** | **43 of 130** |
+
+The two tools barely overlap, which is the point. Defender for Cloud is a security product for
+Azure resources: it does not price anything, does not look for what you stopped using, does not
+judge whether a workload survives a zone failure, does not care whether a resource is tagged or
+owned, and does not assess Entra ID at all. Maester is the other half, a test framework for
+Microsoft 365 and Entra configuration, and it tests configuration rather than taking an inventory
+of the directory, so "is there a policy requiring MFA" is one of its tests while "which app
+credentials expire next month", "which service principals nobody owns" and "which guests have not
+signed in for four months" are not. Its Azure footprint is three tests.
+
+What is left in the middle is 43 checks: the lifecycle and ownership of directory objects, app
+credential hygiene, and the parts of an Azure estate that are about waste, resilience and
+governance rather than attack surface.
+
+Both mappings are our own assessment of overlap rather than a vendor statement, and both are
+deliberately generous: anything plausibly covered is marked covered, so those counts are floors.
 
 ## The checklist
 

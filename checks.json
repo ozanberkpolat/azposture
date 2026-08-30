@@ -1,8 +1,8 @@
 {
  "module_version": "0.1.0",
- "catalog_version": "2026-08-18",
- "catalog_commit": "3c4d1711",
- "generated": "2026-08-30T09:47:35+00:00",
+ "catalog_version": "2026-08-30",
+ "catalog_commit": "0c4fc21e",
+ "generated": "2026-08-30T15:45:26+00:00",
  "severity_weight": {
   "critical": 4,
   "high": 3,
@@ -40,7 +40,8 @@
     "expired",
     "rotation"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "id-long-lived-creds",
@@ -68,7 +69,8 @@
     "secrets",
     "rotation"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "id-multi-tenant",
@@ -95,7 +97,8 @@
     "multitenant",
     "audience"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "id-multiple-secrets",
@@ -122,7 +125,8 @@
     "secrets",
     "hygiene"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "id-spa-secrets",
@@ -149,7 +153,8 @@
     "spa",
     "secrets"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "id-azdo-secrets",
@@ -177,7 +182,8 @@
     "secrets",
     "federation"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "id-devops-naming",
@@ -205,7 +211,8 @@
     "devops",
     "governance"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "id-guests-password-only",
@@ -233,7 +240,8 @@
     "mfa",
     "password"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "id-privileged-accounts",
@@ -264,7 +272,8 @@
     "mfa",
     "stale"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "id-pim-activation",
@@ -292,7 +301,8 @@
     "activation",
     "jit"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "lib-sp-overprivileged",
@@ -321,7 +331,8 @@
     "permissions",
     "privilege"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "lib-risky-consent",
@@ -349,7 +360,8 @@
     "graph",
     "apps"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "lib-dormant-sp",
@@ -377,7 +389,8 @@
     "dormant",
     "cleanup"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "lib-unverified-publisher",
@@ -404,7 +417,8 @@
     "publisher",
     "governance"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "lib-sp-no-owner",
@@ -431,7 +445,8 @@
     "ownerless",
     "governance"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "lib-thirdparty-consent",
@@ -459,7 +474,8 @@
     "oauth",
     "vendors"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "lib-inactive-users",
@@ -487,7 +503,8 @@
     "inactive",
     "lifecycle"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "lib-inactive-guests",
@@ -515,7 +532,8 @@
     "inactive",
     "cleanup"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "lib-overdue-reviews",
@@ -542,7 +560,8 @@
     "governance",
     "access"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "lib-ownerless-groups",
@@ -569,7 +588,8 @@
     "ownerless",
     "governance"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "lib-ownerless-apps",
@@ -596,7 +616,8 @@
     "ownerless",
     "governance"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "lib-sp-high-risk-roles",
@@ -624,7 +645,8 @@
     "roles",
     "privilege"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "lib-sp-multi-approles",
@@ -652,7 +674,8 @@
     "permissions",
     "privilege"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "lib-unclassified-mi",
@@ -679,7 +702,8 @@
     "tags",
     "governance"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "entra-user-app-reg",
@@ -707,7 +731,8 @@
     "consent",
     "registration"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "entra-user-consent",
@@ -735,7 +760,8 @@
     "oauth",
     "apps"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "entra-guest-access",
@@ -763,7 +789,8 @@
     "external",
     "invites"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "entra-user-create",
@@ -791,7 +818,8 @@
     "governance",
     "selfservice"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "entra-no-baseline",
@@ -819,7 +847,8 @@
     "securitydefaults",
     "baseline"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "entra-ca-mfa-all",
@@ -846,7 +875,8 @@
     "mfa",
     "signin"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "entra-ca-mfa-admins",
@@ -874,7 +904,8 @@
     "admins",
     "privileged"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "entra-ca-legacy-auth",
@@ -901,7 +932,8 @@
     "legacyauth",
     "mfa"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "entra-ca-mfa-arm",
@@ -929,7 +961,8 @@
     "azure",
     "management"
    ],
-   "defender": true
+   "defender": true,
+   "maester": true
   },
   {
    "key": "entra-ca-signin-risk",
@@ -957,7 +990,8 @@
     "signin",
     "mfa"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "entra-ca-user-risk",
@@ -985,7 +1019,8 @@
     "password",
     "mfa"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "entra-ca-mfa-strength",
@@ -1014,7 +1049,8 @@
     "admins",
     "privileged"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "entra-admins-synced",
@@ -1042,7 +1078,8 @@
     "admins",
     "identity"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "entra-ga-count",
@@ -1070,7 +1107,8 @@
     "globaladmin",
     "breakglass"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "entra-weak-authmethods",
@@ -1098,7 +1136,8 @@
     "sms",
     "phishing"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "entra-mfa-registration",
@@ -1126,7 +1165,8 @@
     "registration",
     "coverage"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "entra-risky-users",
@@ -1153,7 +1193,8 @@
     "identityprotection",
     "users"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "entra-stale-devices",
@@ -1180,7 +1221,8 @@
     "stale",
     "cleanup"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "entra-standing-priv",
@@ -1208,7 +1250,8 @@
     "standing",
     "jit"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "arm-kv-rbac",
@@ -1233,7 +1276,8 @@
     "rbac",
     "security"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-kv-purge",
@@ -1258,7 +1302,8 @@
     "purge",
     "security"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-kv-softdelete",
@@ -1283,7 +1328,8 @@
     "softdelete",
     "retention"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-kv-public",
@@ -1308,7 +1354,8 @@
     "public",
     "network"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-kv-accesspolicy-broad",
@@ -1333,7 +1380,8 @@
     "wildcard",
     "privilege"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-sa-blobpublic",
@@ -1358,7 +1406,8 @@
     "public",
     "blob"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-sa-publicnet",
@@ -1383,7 +1432,8 @@
     "network",
     "public"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-sa-tls",
@@ -1408,7 +1458,8 @@
     "tls",
     "encryption"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-sa-https",
@@ -1433,7 +1484,8 @@
     "https",
     "encryption"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-sa-sharedkey",
@@ -1458,7 +1510,8 @@
     "sharedkey",
     "access"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-sa-infraenc",
@@ -1483,7 +1536,8 @@
     "encryption",
     "compliance"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-nsg-ssh-rdp",
@@ -1509,7 +1563,8 @@
     "rdp",
     "networking"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-nsg-anyany",
@@ -1534,7 +1589,8 @@
     "internet",
     "networking"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-pip-orphan",
@@ -1560,7 +1616,8 @@
     "orphaned",
     "cost"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-subnet-nonsg",
@@ -1585,7 +1642,8 @@
     "nsg",
     "networking"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-disk-unattached",
@@ -1611,7 +1669,8 @@
     "orphaned",
     "cost"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-disk-platformkey",
@@ -1636,7 +1695,8 @@
     "encryption",
     "cmk"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-vm-unmanaged",
@@ -1661,7 +1721,8 @@
     "disk",
     "legacy"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-rbac-owner-sub",
@@ -1686,7 +1747,8 @@
     "owner",
     "privilege"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-res-untagged",
@@ -1711,7 +1773,8 @@
     "governance",
     "untagged"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-rel-vm-zones",
@@ -1736,7 +1799,8 @@
     "zones",
     "reliability"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-caf-untagged",
@@ -1761,7 +1825,8 @@
     "governance",
     "caf"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-caf-rg-empty",
@@ -1786,7 +1851,8 @@
     "empty",
     "cleanup"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-caf-defender-off",
@@ -1811,7 +1877,8 @@
     "security",
     "freetier"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-cost-appplan",
@@ -1836,7 +1903,8 @@
     "orphaned",
     "cost"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-cost-avset",
@@ -1861,7 +1929,8 @@
     "orphaned",
     "cost"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-cost-nic",
@@ -1886,7 +1955,8 @@
     "orphaned",
     "cost"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-cost-nsg",
@@ -1911,7 +1981,8 @@
     "unattached",
     "cleanup"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-cost-routetable",
@@ -1936,7 +2007,8 @@
     "unattached",
     "cleanup"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-cost-tm",
@@ -1961,7 +2033,8 @@
     "empty",
     "cost"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-cost-vnet-empty",
@@ -1986,7 +2059,8 @@
     "empty",
     "cleanup"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-cost-sqlpool",
@@ -2011,7 +2085,8 @@
     "elasticpool",
     "cost"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-sql-public",
@@ -2037,7 +2112,8 @@
     "public",
     "exposure"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-sql-firewall-open",
@@ -2063,7 +2139,8 @@
     "firewall",
     "public"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-sql-aad-admin",
@@ -2089,7 +2166,8 @@
     "entra",
     "identity"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-sql-aadonly",
@@ -2115,7 +2193,8 @@
     "entra",
     "authentication"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-cosmos-localauth",
@@ -2141,7 +2220,8 @@
     "localauth",
     "keys"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-cosmos-metadatawrite",
@@ -2167,7 +2247,8 @@
     "rbac",
     "metadata"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-pg-public",
@@ -2193,7 +2274,8 @@
     "public",
     "exposure"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-mysql-public",
@@ -2219,7 +2301,8 @@
     "public",
     "exposure"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-defender-databases",
@@ -2245,7 +2328,8 @@
     "threat",
     "sql"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-acr-weak-access",
@@ -2271,7 +2355,8 @@
     "registry",
     "access"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-redis-nonssl",
@@ -2297,7 +2382,8 @@
     "tls",
     "encryption"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-messaging-localauth",
@@ -2323,7 +2409,8 @@
     "messaging",
     "localauth"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-appsvc-https",
@@ -2349,7 +2436,8 @@
     "https",
     "tls"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-appsvc-mintls",
@@ -2375,7 +2463,8 @@
     "tls",
     "encryption"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-appsvc-ftps",
@@ -2401,7 +2490,8 @@
     "ftp",
     "deployment"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-appsvc-remotedebug",
@@ -2427,7 +2517,8 @@
     "debugging",
     "hardening"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-appsvc-mi",
@@ -2453,7 +2544,8 @@
     "managedidentity",
     "secrets"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-appsvc-http2",
@@ -2479,7 +2571,8 @@
     "http2",
     "performance"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-vm-nobackup",
@@ -2505,7 +2598,8 @@
     "recovery",
     "bcdr"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-vm-encryptionhost",
@@ -2531,7 +2625,8 @@
     "compute",
     "atrest"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-vm-endpoint",
@@ -2557,7 +2652,8 @@
     "antimalware",
     "defender"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-vm-publicip",
@@ -2583,7 +2679,8 @@
     "publicip",
     "exposure"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-vm-mi",
@@ -2609,7 +2706,8 @@
     "compute",
     "secrets"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-storage-lrs",
@@ -2635,7 +2733,8 @@
     "redundancy",
     "bcdr"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-vm-singleinstance",
@@ -2661,7 +2760,8 @@
     "sla",
     "availability"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-sql-zone",
@@ -2687,7 +2787,8 @@
     "zone",
     "database"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-appplan-zone",
@@ -2713,7 +2814,8 @@
     "zone",
     "web"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-net-basic-sku",
@@ -2739,7 +2841,8 @@
     "retirement",
     "sku"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-aks-rbac",
@@ -2765,7 +2868,8 @@
     "rbac",
     "entra"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-aks-publicapi",
@@ -2791,7 +2895,8 @@
     "apiserver",
     "exposure"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-aks-netpolicy",
@@ -2817,7 +2922,8 @@
     "networkpolicy",
     "segmentation"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-aks-upgrade",
@@ -2843,7 +2949,8 @@
     "upgrade",
     "patching"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-la-retention",
@@ -2869,7 +2976,8 @@
     "retention",
     "compliance"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-nsg-udp-internet",
@@ -2895,7 +3003,8 @@
     "udp",
     "exposure"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-privatedns-spoke-link",
@@ -2923,7 +3032,8 @@
     "hub and spoke",
     "landing zone"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-activitylog-alerts",
@@ -2949,7 +3059,8 @@
     "activitylog",
     "detection"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-aks-localaccounts",
@@ -2975,7 +3086,8 @@
     "identity",
     "containers"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-acr-public",
@@ -3001,7 +3113,8 @@
     "publicaccess",
     "containers"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-appgw-waf",
@@ -3026,7 +3139,8 @@
     "applicationgateway",
     "networking"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-wafpolicy-detection",
@@ -3052,7 +3166,8 @@
     "applicationgateway",
     "networking"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "arm-vm-trustedlaunch",
@@ -3078,7 +3193,8 @@
     "secureboot",
     "encryption"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-rbac-custom-wildcard",
@@ -3103,7 +3219,8 @@
     "roles",
     "privileged"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-sql-mintls",
@@ -3129,7 +3246,8 @@
     "databases",
     "encryption"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-db-sslenforce",
@@ -3156,7 +3274,8 @@
     "databases",
     "encryption"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-cosmos-public",
@@ -3181,7 +3300,8 @@
     "publicaccess",
     "databases"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-redis-mintls",
@@ -3207,7 +3327,8 @@
     "cache",
     "encryption"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-messaging-mintls",
@@ -3234,7 +3355,8 @@
     "messaging",
     "encryption"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-appsvc-public",
@@ -3259,7 +3381,8 @@
     "publicaccess",
     "web"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "arm-automation-public",
@@ -3284,7 +3407,8 @@
     "publicaccess",
     "compute"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "caf-mg-hierarchy",
@@ -3309,7 +3433,8 @@
     "governance",
     "managementgroups"
    ],
-   "defender": false
+   "defender": false,
+   "maester": true
   },
   {
    "key": "caf-policy-compliance",
@@ -3334,7 +3459,8 @@
     "policy",
     "compliance"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "caf-budgets",
@@ -3359,7 +3485,8 @@
     "cost",
     "budgets"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   },
   {
    "key": "caf-diag-activity",
@@ -3384,7 +3511,8 @@
     "monitoring",
     "diagnostics"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "res-classic-admins",
@@ -3409,7 +3537,8 @@
     "classicadmin",
     "legacy"
    ],
-   "defender": true
+   "defender": true,
+   "maester": false
   },
   {
    "key": "cost-vm-reservation",
@@ -3437,7 +3566,8 @@
     "utilization",
     "vm"
    ],
-   "defender": false
+   "defender": false,
+   "maester": false
   }
  ]
 }
