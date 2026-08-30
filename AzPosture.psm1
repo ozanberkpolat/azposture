@@ -372,13 +372,16 @@ function Get-ScoreBand {
 
 function Get-ControlRollup {
     <# Findings collapse to one row per check: the control is what gets fixed, the
-       findings under it are the resources it affects. #>
-    param($Items)
+       findings under it are the resources it affects. A finding's own title names the
+       RESOURCE, so the control's name comes from the catalog; only a key the catalog does
+       not know falls back to the first finding's title. #>
+    param($Items, $Labels)
     $groups = $Items | Group-Object check_key
     $rows = foreach ($g in $groups) {
         $first = $g.Group[0]
+        $label = $(if ($Labels -and $Labels.ContainsKey($g.Name)) { $Labels[$g.Name] } else { $first.title })
         [pscustomobject]@{
-            Key = $g.Name; Title = $first.title; Severity = $first.severity
+            Key = $g.Name; Title = $label; Severity = $first.severity
             Domain = $(if ($first.domain) { $first.domain } else { 'Other' })
             Impact = $first.impact; Fix = $first.fix; BestPractice = $first.best_practice
             Status = $first.status; MinRole = $first.min_role; Licence = $first.licence
@@ -460,8 +463,10 @@ function New-AzPostureReport {
 
     $all = @($Findings)
     $fails = @($all | Where-Object status -eq 'fail')
-    $failControls = Get-ControlRollup $fails
-    $allControls = Get-ControlRollup $all
+    $labels = @{}
+    try { foreach ($c in (Get-AzPostureCatalog).checks) { $labels[$c.key] = $c.label } } catch { }
+    $failControls = Get-ControlRollup $fails $labels
+    $allControls = Get-ControlRollup $all $labels
     $sev = $Summary.failing_items_by_severity
     $counts = @{}
     foreach ($s in 'critical', 'high', 'medium', 'low') {
